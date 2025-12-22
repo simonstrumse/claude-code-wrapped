@@ -39,6 +39,9 @@ output/
 *.png
 !docs/*.png
 
+# Deploy
+.vercel/
+
 # OS
 .DS_Store
 Thumbs.db

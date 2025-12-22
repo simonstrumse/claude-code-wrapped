@@ -34,7 +34,11 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'total_messages': stats.total_messages,
         'total_tool_calls': stats.total_tool_calls,
         'total_days_active': stats.total_days_active,
+        'input_tokens': stats.input_tokens,
         'output_tokens': stats.output_tokens,
+        'cache_read_tokens': stats.cache_read_tokens,
+        'cache_creation_tokens': stats.cache_creation_tokens,
+        'total_tokens': stats.total_tokens,
         'primary_model': stats.primary_model,
         'peak_day_date': stats.peak_day_date,
         'peak_day_messages': stats.peak_day_messages,
@@ -46,6 +50,20 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'streak_days': stats.streak_days,
         'projects': stats.projects,
         'tokens_as_pages': stats.tokens_as_pages,
+        'codebase_repo_count': stats.codebase_repo_count,
+        'codebase_projects': stats.codebase_projects,
+        'codebase_file_count': stats.codebase_file_count,
+        'codebase_line_count': stats.codebase_line_count,
+        'codebase_edit_hour_distribution': stats.codebase_edit_hour_distribution,
+        'codebase_peak_edit_hour': stats.codebase_peak_edit_hour,
+        'codebase_peak_edit_hour_files': stats.codebase_peak_edit_hour_files,
+        'git_repo_count': stats.git_repo_count,
+        'git_commit_count': stats.git_commit_count,
+        'git_lines_added': stats.git_lines_added,
+        'git_lines_deleted': stats.git_lines_deleted,
+        'git_commit_hour_distribution': stats.git_commit_hour_distribution,
+        'git_peak_commit_hour': stats.git_peak_commit_hour,
+        'git_peak_commit_hour_commits': stats.git_peak_commit_hour_commits,
     }
     return json.dumps(data, indent=12)
 
@@ -166,11 +184,27 @@ Examples:
   python generate.py --output my_wrapped.png
   python generate.py --html-only        # Just generate HTML
   python generate.py --stats-only       # Just print stats as JSON
+  python generate.py --code-dir ~/Projects
+  python generate.py --max-stats
         """
     )
     
     parser.add_argument('--claude-dir', type=Path, default=Path.home() / '.claude',
                        help='Path to .claude directory (default: ~/.claude)')
+    parser.add_argument('--code-dir', type=Path, default=None,
+                       help='Path to local code directory for repo stats')
+    parser.add_argument('--include-hidden', action='store_true',
+                       help='Include hidden directories in code scan')
+    parser.add_argument('--include-nested-repos', action='store_true',
+                       help='Include nested git repos in code scan')
+    parser.add_argument('--max-file-size-mb', type=float, default=None,
+                       help='Max file size (MB) to count for code stats')
+    parser.add_argument('--relax-excludes', action='store_true',
+                       help='Use a smaller exclude list for code scanning')
+    parser.add_argument('--skip-git', action='store_true',
+                       help='Skip git history stats')
+    parser.add_argument('--max-stats', action='store_true',
+                       help='Enable aggressive scanning for maximum stats')
     parser.add_argument('--output', '-o', type=Path, default=None,
                        help='Output file path (default: output/wrapped.png)')
     parser.add_argument('--html-only', action='store_true',
@@ -182,6 +216,18 @@ Examples:
     
     # Ensure output directory exists
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    if args.code_dir is None and sys.stdin.isatty():
+        default_dir = Path.home() / 'Claude Code Projects'
+        default_hint = f" [default: {default_dir}]" if default_dir.exists() else ""
+        try:
+            response = input(f"Project folder for local codebase stats{default_hint}: ").strip()
+        except EOFError:
+            response = ""
+        if response:
+            args.code_dir = Path(response).expanduser()
+        elif default_dir.exists():
+            args.code_dir = default_dir
     
     print("🎁 Claude Code Wrapped Generator")
     print("=" * 40)
@@ -189,7 +235,16 @@ Examples:
     # Generate stats
     print(f"\n📊 Parsing stats from {args.claude_dir}...")
     try:
-        stats = generate_wrapped_stats(args.claude_dir)
+        stats = generate_wrapped_stats(
+            args.claude_dir,
+            args.code_dir,
+            include_hidden=args.include_hidden,
+            include_nested_repos=args.include_nested_repos,
+            max_file_size_mb=args.max_file_size_mb,
+            relax_excludes=args.relax_excludes,
+            include_git=not args.skip_git,
+            max_stats=args.max_stats,
+        )
     except FileNotFoundError as e:
         print(f"\n❌ Error: {e}")
         print("\nMake sure you have Claude Code installed and have used it at least once.")
@@ -198,7 +253,8 @@ Examples:
     # Print summary
     print(f"\n✓ Found {stats.total_sessions} sessions across {stats.total_days_active} days")
     print(f"  • {stats.total_messages:,} messages exchanged")
-    print(f"  • {stats.output_tokens:,} tokens generated")
+    print(f"  • {stats.total_tokens:,} tokens processed (incl. cache)")
+    print(f"  • {stats.output_tokens:,} output tokens")
     print(f"  • {stats.project_count} projects touched")
     print(f"  • Peak day: {stats.peak_day_date} ({stats.peak_day_messages:,} messages)")
     print(f"  • Your vibe: {stats.coding_personality}")

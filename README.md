@@ -13,9 +13,12 @@ A shareable card featuring:
 - **Peak day** — your most intense coding session
 - **Coding personality** — Night Owl? Afternoon Warrior?
 - **Hour-of-day heatmap** — when you code
-- **Tokens generated** — converted to "pages of code"
+- **Tokens processed** — output + cache + input totals
 - **Model usage** — which Claude model you vibed with
 - **Projects touched** — repos you worked on
+- **Local codebase size** — projects, files, lines
+- **File edit timing** — when files changed most
+- **Git history** — commit timing, lines added/deleted
 - **Longest session** and **coding streaks**
 
 ## Quick Start
@@ -33,6 +36,7 @@ python generate.py
 ```
 
 Your wrapped image will be saved to `output/wrapped.png`.
+If you don't pass `--code-dir`, the script will prompt you for a project folder.
 
 ## Requirements
 
@@ -66,6 +70,18 @@ python generate.py --stats-only
 
 # Use a different .claude directory
 python generate.py --claude-dir /path/to/.claude
+
+# Set your project folder (for local codebase + git stats)
+python generate.py --code-dir /path/to/projects
+
+# Max stats mode (include hidden + nested repos, larger files)
+python generate.py --max-stats
+
+# Fine-grained scan controls
+python generate.py --include-hidden --include-nested-repos --max-file-size-mb 10 --relax-excludes
+
+# Skip git history aggregation (faster)
+python generate.py --skip-git
 ```
 
 ## Data Sources
@@ -77,6 +93,7 @@ The tool reads from your local Claude Code data:
 | `~/.claude/stats-cache.json` | Pre-computed daily stats, tokens, sessions |
 | `~/.claude/projects/` | List of projects you've worked on |
 | `~/.claude/history.jsonl` | Conversation history (for future features) |
+| `/path/to/projects` | Local folders + git history for codebase stats |
 
 **Privacy note:** All processing happens locally. No data is sent anywhere.
 
@@ -100,8 +117,9 @@ The card design lives in `wrapped.html`. It's self-contained HTML/CSS/JS that yo
 
 1. **Parse** — Reads `~/.claude/stats-cache.json` and project directories
 2. **Compute** — Calculates derived stats (streaks, personality, pages of code)
-3. **Render** — Injects data into HTML template
-4. **Screenshot** — Uses Playwright to capture PNG (or outputs HTML)
+3. **Scan** — Walks your project folder and git history (optional)
+4. **Render** — Injects data into HTML template
+5. **Screenshot** — Uses Playwright to capture PNG (or outputs HTML)
 
 ## Example Output
 
@@ -113,7 +131,7 @@ The card design lives in `wrapped.html`. It's self-contained HTML/CSS/JS that yo
 
 ✓ Found 179 sessions across 19 days
   • 16,594 messages exchanged
-  • 1,185,553 tokens generated
+  • 1,185,553 tokens processed (incl. cache)
   • 14 projects touched
   • Peak day: 2025-12-17 (4,472 messages)
   • Your vibe: Hyperfocused Afternoon Warrior
