@@ -22,7 +22,7 @@ A shareable card featuring:
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/claude-code-wrapped.git
+git clone https://github.com/0xleal/claude-code-wrapped.git
 cd claude-code-wrapped
 
 # Install dependencies (optional - only needed for auto PNG)
