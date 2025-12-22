@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Wrapped 2025</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #131316;
+            --bg-card: #1a1a1f;
+            --accent-orange: #ff6b35;
+            --accent-purple: #a855f7;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --gradient-main: linear-gradient(135deg, #ff6b35 0%, #a855f7 50%, #3b82f6 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .wrapped-container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 0 1px rgba(255,255,255,0.05),
+                0 25px 50px -12px rgba(0,0,0,0.8),
+                0 0 100px rgba(168, 85, 247, 0.1);
+        }
+
+        .header {
+            background: var(--gradient-main);
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.15;
+            mix-blend-mode: overlay;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .year {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            margin-top: 0.25rem;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .content {
+            padding: 1.5rem;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-stat {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .hero-stat-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .hero-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        .section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .section-title {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            background: var(--accent-orange);
+        }
+
+        .peak-day {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .peak-day-date {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .peak-day-stats {
+            text-align: right;
+        }
+
+        .peak-day-messages {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-orange);
+        }
+
+        .peak-day-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .personality {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .personality-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--gradient-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .personality-text h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .personality-text p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .hour-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 40px;
+            margin-top: 0.75rem;
+        }
+
+        .hour-bar {
+            flex: 1;
+            background: rgba(168, 85, 247, 0.3);
+            border-radius: 2px 2px 0 0;
+            min-height: 4px;
+            transition: background 0.2s;
+        }
+
+        .hour-bar.active {
+            background: var(--accent-purple);
+        }
+
+        .hour-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.25rem;
+        }
+
+        .hour-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .model-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(59, 130, 246, 0.2));
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .model-badge::before {
+            content: '✦';
+            color: var(--accent-purple);
+        }
+
+        .projects-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .project-tag {
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 0.35rem 0.65rem;
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .tokens-stat {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .tokens-value {
+            font-size: 2rem;
+            font-weight: 800;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tokens-unit {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .tokens-subtext {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 1rem 1.5rem 1.5rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .footer a {
+            color: var(--accent-purple);
+            text-decoration: none;
+        }
+
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent-green);
+            border-radius: 6px;
+            padding: 0.35rem 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .mini-stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .mini-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapped-container" id="wrapped-card">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">Claude Code</div>
+                <div class="title">Wrapped</div>
+                <div class="year">2025</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-value" id="stat-sessions">179</div>
+                    <div class="hero-stat-label">Sessions</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value" id="stat-messages">16.6K</div>
+                    <div class="hero-stat-label">Messages</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value" id="stat-days">19</div>
+                    <div class="hero-stat-label">Days Active</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Peak Day</div>
+                <div class="peak-day">
+                    <div class="peak-day-date" id="peak-date">Dec 17</div>
+                    <div class="peak-day-stats">
+                        <div class="peak-day-messages" id="peak-messages">4,472 messages</div>
+                        <div class="peak-day-label" id="peak-tools">1,737 tool calls</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Your Coding Personality</div>
+                <div class="personality">
+                    <div class="personality-badge" id="personality-emoji">⚔️</div>
+                    <div class="personality-text">
+                        <h3 id="personality-title">Hyperfocused Afternoon Warrior</h3>
+                        <p id="personality-desc">Peak productivity 2-6pm, with legendary deep work sessions</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">When You Code</div>
+                <div class="hour-chart" id="hour-chart">
+                    <!-- Generated by JS -->
+                </div>
+                <div class="hour-labels">
+                    <span class="hour-label">12am</span>
+                    <span class="hour-label">6am</span>
+                    <span class="hour-label">12pm</span>
+                    <span class="hour-label">6pm</span>
+                    <span class="hour-label">11pm</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Tokens Generated</div>
+                <div class="tokens-stat">
+                    <span class="tokens-value" id="tokens-value">1.19M</span>
+                    <span class="tokens-unit">tokens</span>
+                </div>
+                <div class="tokens-subtext" id="tokens-subtext">That's roughly 6,364 pages of code</div>
+                <div class="streak-badge" id="streak-badge">
+                    🔥 <span id="streak-days">5</span> day streak
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Your Model</div>
+                <div class="model-badge" id="model-name">Opus 4.5</div>
+                <div class="tokens-subtext" style="margin-top: 0.5rem">100% — you don't compromise on intelligence</div>
+            </div>
+
+            <div class="section">
+                <div class="section-title"><span id="project-count">14</span> Projects Touched</div>
+                <div class="projects-grid" id="projects-grid">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+
+            <div class="two-col">
+                <div class="section" style="margin-bottom: 0">
+                    <div class="section-title">Longest Session</div>
+                    <div class="mini-stat-value" id="longest-duration">39.5h</div>
+                    <div class="mini-stat-label" id="longest-messages">112 messages</div>
+                </div>
+                <div class="section" style="margin-bottom: 0">
+                    <div class="section-title">Tool Calls</div>
+                    <div class="mini-stat-value" id="tool-calls">5.5K</div>
+                    <div class="mini-stat-label">Total executions</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Generated with claude-code-wrapped<br>
+            <a href="https://github.com/yourusername/claude-code-wrapped">github.com/yourusername/claude-code-wrapped</a>
+        </div>
+    </div>
+
+    <script>
+        // This will be populated by the generator script
+        const WRAPPED_DATA = {
+            "total_sessions": 179,
+            "total_messages": 16594,
+            "total_tool_calls": 5533,
+            "total_days_active": 19,
+            "output_tokens": 1185553,
+            "primary_model": "Opus 4.5",
+            "peak_day_date": "2025-12-17",
+            "peak_day_messages": 4472,
+            "peak_day_tool_calls": 1737,
+            "coding_personality": "Hyperfocused Afternoon Warrior \u2694\ufe0f",
+            "hour_distribution": {
+                        "0": 3,
+                        "1": 2,
+                        "8": 2,
+                        "9": 8,
+                        "10": 17,
+                        "11": 18,
+                        "12": 7,
+                        "13": 13,
+                        "14": 22,
+                        "15": 11,
+                        "16": 20,
+                        "17": 17,
+                        "18": 12,
+                        "19": 4,
+                        "20": 5,
+                        "21": 3,
+                        "22": 5,
+                        "23": 10
+            },
+            "longest_session_duration_hours": 39.5,
+            "longest_session_messages": 112,
+            "streak_days": 7,
+            "projects": [
+                        "2025",
+                        "OnchainWrapped",
+                        "api",
+                        "app",
+                        "lisbon",
+                        "notes"
+            ],
+            "tokens_as_pages": 6339
+};
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function getPersonalityEmoji(personality) {
+            if (personality.includes('Night Owl')) return '🦉';
+            if (personality.includes('Early Bird')) return '🐦';
+            if (personality.includes('Afternoon')) return '⚔️';
+            return '💻';
+        }
+
+        function renderHourChart(hourData) {
+            const container = document.getElementById('hour-chart');
+            const maxVal = Math.max(...Object.values(hourData));
+            
+            container.innerHTML = '';
+            for (let i = 0; i < 24; i++) {
+                const val = hourData[i.toString()] || 0;
+                const height = maxVal > 0 ? (val / maxVal) * 100 : 0;
+                const bar = document.createElement('div');
+                bar.className = 'hour-bar' + (height > 50 ? ' active' : '');
+                bar.style.height = Math.max(height, 10) + '%';
+                container.appendChild(bar);
+            }
+        }
+
+        function renderProjects(projects) {
+            const container = document.getElementById('projects-grid');
+            container.innerHTML = '';
+            
+            // Show top 8 projects
+            const displayProjects = projects.slice(0, 8);
+            displayProjects.forEach(project => {
+                const tag = document.createElement('span');
+                tag.className = 'project-tag';
+                tag.textContent = project;
+                container.appendChild(tag);
+            });
+            
+            if (projects.length > 8) {
+                const more = document.createElement('span');
+                more.className = 'project-tag';
+                more.textContent = `+${projects.length - 8} more`;
+                container.appendChild(more);
+            }
+        }
+
+        function render(data) {
+            document.getElementById('stat-sessions').textContent = data.total_sessions;
+            document.getElementById('stat-messages').textContent = formatNumber(data.total_messages);
+            document.getElementById('stat-days').textContent = data.total_days_active;
+            
+            document.getElementById('peak-date').textContent = formatDate(data.peak_day_date);
+            document.getElementById('peak-messages').textContent = data.peak_day_messages.toLocaleString() + ' messages';
+            document.getElementById('peak-tools').textContent = data.peak_day_tool_calls.toLocaleString() + ' tool calls';
+            
+            document.getElementById('personality-emoji').textContent = getPersonalityEmoji(data.coding_personality);
+            document.getElementById('personality-title').textContent = data.coding_personality;
+            
+            document.getElementById('tokens-value').textContent = formatNumber(data.output_tokens);
+            document.getElementById('tokens-subtext').textContent = `That's roughly ${data.tokens_as_pages.toLocaleString()} pages of code`;
+            
+            document.getElementById('streak-days').textContent = data.streak_days;
+            document.getElementById('model-name').innerHTML = '✦ ' + data.primary_model;
+            
+            document.getElementById('longest-duration').textContent = data.longest_session_duration_hours + 'h';
+            document.getElementById('longest-messages').textContent = data.longest_session_messages + ' messages';
+            
+            document.getElementById('tool-calls').textContent = formatNumber(data.total_tool_calls);
+            document.getElementById('project-count').textContent = data.projects.length;
+            
+            renderHourChart(data.hour_distribution);
+            renderProjects(data.projects);
+        }
+
+        render(WRAPPED_DATA);
+    </script>
+</body>
+</html>

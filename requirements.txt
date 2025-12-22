@@ -1,0 +1,7 @@
+# Core dependencies (none required - uses stdlib only)
+
+# Optional: For automatic PNG generation (choose one)
+playwright>=1.40.0
+# selenium>=4.15.0
+
+# To use playwright, also run: playwright install chromium
