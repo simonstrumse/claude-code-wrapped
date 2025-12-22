@@ -4,7 +4,7 @@ Generate a beautiful, shareable "Wrapped" image from your Claude Code usage stat
 
 Since claude does not provide an API to access these stats we have to use local files.
 
-![Example Wrapped Card](docs/example.png)
+![Example Wrapped Card](docs/wrapped.png)
 
 ## What You Get
 
