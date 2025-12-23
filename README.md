@@ -17,8 +17,10 @@ A shareable card featuring:
 - **Model usage** — which Claude model you vibed with
 - **Projects touched** — repos you worked on
 - **Local codebase size** — projects, files, lines
-- **File edit timing** — when files changed most
-- **Git history** — commit timing, lines added/deleted
+- **Coding rhythm** — day-of-week heatmap from commits
+- **Code churn by hour** — when changes land
+- **Git history** — commits, lines added/deleted, recent churn
+- **Language mix** — top file types by lines
 - **Longest session** and **coding streaks**
 
 ## Quick Start

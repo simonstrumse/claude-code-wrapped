@@ -34,6 +34,8 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'total_messages': stats.total_messages,
         'total_tool_calls': stats.total_tool_calls,
         'total_days_active': stats.total_days_active,
+        'date_range_start': stats.date_range_start,
+        'date_range_end': stats.date_range_end,
         'input_tokens': stats.input_tokens,
         'output_tokens': stats.output_tokens,
         'cache_read_tokens': stats.cache_read_tokens,
@@ -47,6 +49,9 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'peak_day_tool_calls': stats.peak_day_tool_calls,
         'coding_personality': stats.coding_personality,
         'hour_distribution': stats.hour_distribution,
+        'session_day_distribution': stats.session_day_distribution,
+        'session_peak_day': stats.session_peak_day,
+        'session_peak_day_sessions': stats.session_peak_day_sessions,
         'longest_session_duration_hours': stats.longest_session_duration_hours,
         'longest_session_messages': stats.longest_session_messages,
         'streak_days': stats.streak_days,
@@ -66,6 +71,14 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'git_commit_hour_distribution': stats.git_commit_hour_distribution,
         'git_peak_commit_hour': stats.git_peak_commit_hour,
         'git_peak_commit_hour_commits': stats.git_peak_commit_hour_commits,
+        'git_commit_day_distribution': stats.git_commit_day_distribution,
+        'git_peak_commit_day': stats.git_peak_commit_day,
+        'git_peak_commit_day_commits': stats.git_peak_commit_day_commits,
+        'git_commit_churn_hour_distribution': stats.git_commit_churn_hour_distribution,
+        'git_peak_churn_hour': stats.git_peak_churn_hour,
+        'git_peak_churn_hour_lines': stats.git_peak_churn_hour_lines,
+        'git_repo_churn_recent': stats.git_repo_churn_recent,
+        'language_mix': stats.language_mix,
     }
     return json.dumps(data, indent=12)
 

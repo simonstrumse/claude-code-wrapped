@@ -49,6 +49,9 @@ class WrappedStats:
     peak_hour: int
     peak_hour_sessions: int
     hour_distribution: dict
+    session_day_distribution: dict
+    session_peak_day: int
+    session_peak_day_sessions: int
     
     # Longest session
     longest_session_duration_hours: float
@@ -76,6 +79,16 @@ class WrappedStats:
     git_commit_hour_distribution: dict
     git_peak_commit_hour: int
     git_peak_commit_hour_commits: int
+    git_commit_day_distribution: dict
+    git_peak_commit_day: int
+    git_peak_commit_day_commits: int
+    git_commit_churn_hour_distribution: dict
+    git_peak_churn_hour: int
+    git_peak_churn_hour_lines: int
+    git_repo_churn_recent: list
+
+    # Codebase mix
+    language_mix: list
     
     # Derived fun stats
     tokens_as_pages: int  # ~250 words per page, ~0.75 tokens per word
@@ -127,6 +140,12 @@ def redact_project_list(projects: list[str], prefix_len: int) -> list[str]:
 
 def normalize_project_name(name: str) -> str:
     return re.sub(r'[^a-z0-9]', '', (name or '').lower())
+
+
+def format_extension_label(ext: str) -> str:
+    if not ext or ext == "noext":
+        return "NOEXT"
+    return ext.lstrip(".").upper()
 
 
 def _infer_project_name_from_cwd(cwd: str) -> str:
@@ -357,6 +376,13 @@ def generate_git_stats(
             "commit_hour_distribution": {str(i): 0 for i in range(24)},
             "peak_commit_hour": 0,
             "peak_commit_hour_commits": 0,
+            "commit_day_distribution": {str(i): 0 for i in range(7)},
+            "peak_commit_day": 0,
+            "peak_commit_day_commits": 0,
+            "commit_churn_hour_distribution": {str(i): 0 for i in range(24)},
+            "peak_churn_hour": 0,
+            "peak_churn_hour_lines": 0,
+            "repo_churn_recent": [],
         }
 
     commit_count = 0
@@ -364,6 +390,9 @@ def generate_git_stats(
     lines_added = 0
     lines_deleted = 0
     commit_hour_distribution = {str(i): 0 for i in range(24)}
+    commit_day_distribution = {str(i): 0 for i in range(7)}
+    commit_churn_hour_distribution = {str(i): 0 for i in range(24)}
+    repo_churn_recent = defaultdict(int)
 
     for repo in repo_paths:
         cmd = [
@@ -389,12 +418,32 @@ def generate_git_stats(
         if not proc.stdout:
             continue
 
+        current_ts = None
+        current_churn = 0
+
+        def finalize_commit():
+            nonlocal current_ts, current_churn
+            if current_ts is None:
+                return
+            hour = datetime.fromtimestamp(current_ts).hour
+            commit_churn_hour_distribution[str(hour)] += current_churn
+            if (
+                range_start_ts is not None
+                and range_end_ts is not None
+                and range_start_ts <= current_ts <= range_end_ts
+            ):
+                repo_churn_recent[repo.name] += current_churn
+            current_ts = None
+            current_churn = 0
+
         for line in proc.stdout:
             line = line.strip()
             if not line:
+                finalize_commit()
                 continue
             if "\t" not in line:
                 if line.isdigit():
+                    finalize_commit()
                     commit_ts = int(line)
                     commit_count += 1
                     if (
@@ -403,16 +452,21 @@ def generate_git_stats(
                         and range_start_ts <= commit_ts <= range_end_ts
                     ):
                         commit_count_range += 1
-                    hour = datetime.fromtimestamp(commit_ts).hour
-                    commit_hour_distribution[str(hour)] += 1
+                    commit_dt = datetime.fromtimestamp(commit_ts)
+                    commit_hour_distribution[str(commit_dt.hour)] += 1
+                    commit_day_distribution[str(commit_dt.weekday())] += 1
+                    current_ts = commit_ts
                 continue
 
             added, deleted, _ = line.split("\t", 2)
             if added.isdigit():
                 lines_added += int(added)
+                current_churn += int(added)
             if deleted.isdigit():
                 lines_deleted += int(deleted)
+                current_churn += int(deleted)
 
+        finalize_commit()
         proc.wait()
 
     if commit_count > 0:
@@ -421,6 +475,27 @@ def generate_git_stats(
     else:
         peak_hour = 0
         peak_commits = 0
+
+    if commit_count > 0:
+        peak_day, peak_day_commits = max(commit_day_distribution.items(), key=lambda x: x[1])
+        peak_day = int(peak_day)
+    else:
+        peak_day = 0
+        peak_day_commits = 0
+
+    churn_total = sum(commit_churn_hour_distribution.values())
+    if churn_total > 0:
+        peak_churn_hour, peak_churn_lines = max(commit_churn_hour_distribution.items(), key=lambda x: x[1])
+        peak_churn_hour = int(peak_churn_hour)
+    else:
+        peak_churn_hour = 0
+        peak_churn_lines = 0
+
+    repo_churn_recent_sorted = sorted(
+        repo_churn_recent.items(),
+        key=lambda x: x[1],
+        reverse=True,
+    )
 
     return {
         "repo_count": len(repo_paths),
@@ -431,6 +506,13 @@ def generate_git_stats(
         "commit_hour_distribution": commit_hour_distribution,
         "peak_commit_hour": peak_hour,
         "peak_commit_hour_commits": peak_commits,
+        "commit_day_distribution": commit_day_distribution,
+        "peak_commit_day": peak_day,
+        "peak_commit_day_commits": peak_day_commits,
+        "commit_churn_hour_distribution": commit_churn_hour_distribution,
+        "peak_churn_hour": peak_churn_hour,
+        "peak_churn_hour_lines": peak_churn_lines,
+        "repo_churn_recent": repo_churn_recent_sorted,
     }
 
 
@@ -449,6 +531,7 @@ def generate_codebase_stats(
             "line_count": 0,
             "project_line_counts": {},
             "project_file_counts": {},
+            "extension_line_counts": {},
             "edit_hour_distribution": {str(i): 0 for i in range(24)},
             "peak_edit_hour": 0,
             "peak_edit_hour_files": 0,
@@ -464,6 +547,7 @@ def generate_codebase_stats(
     line_count = 0
     project_line_counts = defaultdict(int)
     project_file_counts = defaultdict(int)
+    extension_line_counts = defaultdict(int)
     edit_hour_distribution = {str(i): 0 for i in range(24)}
 
     for root, dirs, files in os.walk(code_dir):
@@ -503,6 +587,8 @@ def generate_codebase_stats(
 
             project_line_counts[project_name] += file_lines
             project_file_counts[project_name] += 1
+            ext = path.suffix.lower() if path.suffix else "noext"
+            extension_line_counts[ext] += file_lines
 
             hour = datetime.fromtimestamp(stat.st_mtime).hour
             edit_hour_distribution[str(hour)] += 1
@@ -521,6 +607,7 @@ def generate_codebase_stats(
         "line_count": line_count,
         "project_line_counts": dict(project_line_counts),
         "project_file_counts": dict(project_file_counts),
+        "extension_line_counts": dict(extension_line_counts),
         "edit_hour_distribution": edit_hour_distribution,
         "peak_edit_hour": peak_hour,
         "peak_edit_hour_files": peak_files,
@@ -692,6 +779,27 @@ def generate_wrapped_stats(
     hour_counts = stats.get('hourCounts', {})
     peak_hour = max(hour_counts.items(), key=lambda x: x[1])[0] if hour_counts else 0
     peak_hour_sessions = hour_counts.get(str(peak_hour), 0)
+
+    session_day_distribution = {str(i): 0 for i in range(7)}
+    for day in daily:
+        date_str = day.get('date')
+        if not date_str:
+            continue
+        try:
+            dt = datetime.strptime(date_str, '%Y-%m-%d')
+        except ValueError:
+            continue
+        session_day_distribution[str(dt.weekday())] += int(day.get('sessionCount', 0) or 0)
+
+    if sum(session_day_distribution.values()) > 0:
+        session_peak_day, session_peak_day_sessions = max(
+            session_day_distribution.items(),
+            key=lambda x: x[1],
+        )
+        session_peak_day = int(session_peak_day)
+    else:
+        session_peak_day = 0
+        session_peak_day_sessions = 0
     
     # Longest session
     longest = stats.get('longestSession', {})
@@ -740,6 +848,13 @@ def generate_wrapped_stats(
             "commit_hour_distribution": {str(i): 0 for i in range(24)},
             "peak_commit_hour": 0,
             "peak_commit_hour_commits": 0,
+            "commit_day_distribution": {str(i): 0 for i in range(7)},
+            "peak_commit_day": 0,
+            "peak_commit_day_commits": 0,
+            "commit_churn_hour_distribution": {str(i): 0 for i in range(24)},
+            "peak_churn_hour": 0,
+            "peak_churn_hour_lines": 0,
+            "repo_churn_recent": [],
         }
     )
 
@@ -783,12 +898,33 @@ def generate_wrapped_stats(
             basis_parts.append(time_basis)
         estimated_tokens_basis = " × ".join(basis_parts)
 
+    repo_churn_recent = [
+        {"name": name, "lines": int(lines)}
+        for name, lines in git_stats.get("repo_churn_recent", [])
+        if int(lines) > 0
+    ]
+
+    extension_lines = codebase_stats.get("extension_line_counts", {})
+    language_mix = [
+        {"label": format_extension_label(ext), "lines": int(lines)}
+        for ext, lines in sorted(
+            extension_lines.items(),
+            key=lambda x: x[1],
+            reverse=True,
+        )[:5]
+        if int(lines) > 0
+    ]
+
     if redact_projects:
         projects = redact_project_list(projects_raw, redact_prefix_len)
         codebase_stats["projects"] = redact_project_list(
             codebase_stats["projects"],
             redact_prefix_len,
         )
+        repo_churn_recent = [
+            {"name": redact_project_name(item["name"], redact_prefix_len), "lines": item["lines"]}
+            for item in repo_churn_recent
+        ]
 
     return WrappedStats(
         total_sessions=stats.get('totalSessions', 0),
@@ -813,6 +949,9 @@ def generate_wrapped_stats(
         peak_hour=int(peak_hour),
         peak_hour_sessions=peak_hour_sessions,
         hour_distribution=hour_counts,
+        session_day_distribution=session_day_distribution,
+        session_peak_day=session_peak_day,
+        session_peak_day_sessions=session_peak_day_sessions,
         longest_session_duration_hours=round(duration_hours, 1),
         longest_session_messages=longest.get('messageCount', 0),
         longest_session_date=longest_date,
@@ -832,6 +971,14 @@ def generate_wrapped_stats(
         git_commit_hour_distribution=git_stats["commit_hour_distribution"],
         git_peak_commit_hour=git_stats["peak_commit_hour"],
         git_peak_commit_hour_commits=git_stats["peak_commit_hour_commits"],
+        git_commit_day_distribution=git_stats["commit_day_distribution"],
+        git_peak_commit_day=git_stats["peak_commit_day"],
+        git_peak_commit_day_commits=git_stats["peak_commit_day_commits"],
+        git_commit_churn_hour_distribution=git_stats["commit_churn_hour_distribution"],
+        git_peak_churn_hour=git_stats["peak_churn_hour"],
+        git_peak_churn_hour_lines=git_stats["peak_churn_hour_lines"],
+        git_repo_churn_recent=repo_churn_recent,
+        language_mix=language_mix,
         tokens_as_pages=int(output_tokens / 187),  # ~250 words/page, 0.75 tokens/word
         coding_personality=personality,
         streak_days=streak
