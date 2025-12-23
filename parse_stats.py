@@ -89,6 +89,19 @@ class WrappedStats:
 
     # Codebase mix
     language_mix: list
+
+    # GitHub stats
+    github_available: bool
+    github_year: int
+    github_total_contributions: int
+    github_total_commits: int
+    github_total_prs: int
+    github_total_reviews: int
+    github_total_issues: int
+    github_total_repos: int
+    github_day_distribution: dict
+    github_peak_day: int
+    github_peak_day_contributions: int
     
     # Derived fun stats
     tokens_as_pages: int  # ~250 words per page, ~0.75 tokens per word
@@ -329,6 +342,157 @@ def _count_lines(path: Path) -> int:
 
 def resolve_exclude_dirs(relax_excludes: bool) -> set[str]:
     return set(RELAXED_EXCLUDED_DIRS if relax_excludes else DEFAULT_EXCLUDED_DIRS)
+
+
+def fetch_github_stats(year: int) -> dict:
+    """Fetch GitHub contributions for a year using the gh CLI."""
+    if shutil.which("gh") is None:
+        return {
+            "available": False,
+            "year": year,
+            "total_contributions": 0,
+            "total_commits": 0,
+            "total_prs": 0,
+            "total_reviews": 0,
+            "total_issues": 0,
+            "total_repos": 0,
+            "day_distribution": {str(i): 0 for i in range(7)},
+            "peak_day": 0,
+            "peak_day_contributions": 0,
+        }
+
+    from_date = f"{year}-01-01T00:00:00Z"
+    to_date = f"{year}-12-31T23:59:59Z"
+    query = """
+    query($from: DateTime!, $to: DateTime!) {
+      viewer {
+        contributionsCollection(from: $from, to: $to) {
+          totalCommitContributions
+          totalPullRequestContributions
+          totalPullRequestReviewContributions
+          totalIssueContributions
+          totalRepositoryContributions
+          contributionCalendar {
+            totalContributions
+            weeks {
+              contributionDays {
+                date
+                contributionCount
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+
+    try:
+        proc = subprocess.run(
+            [
+                "gh",
+                "api",
+                "graphql",
+                "-F",
+                f"from={from_date}",
+                "-F",
+                f"to={to_date}",
+                "-f",
+                f"query={query}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, OSError):
+        return {
+            "available": False,
+            "year": year,
+            "total_contributions": 0,
+            "total_commits": 0,
+            "total_prs": 0,
+            "total_reviews": 0,
+            "total_issues": 0,
+            "total_repos": 0,
+            "day_distribution": {str(i): 0 for i in range(7)},
+            "peak_day": 0,
+            "peak_day_contributions": 0,
+        }
+
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return {
+            "available": False,
+            "year": year,
+            "total_contributions": 0,
+            "total_commits": 0,
+            "total_prs": 0,
+            "total_reviews": 0,
+            "total_issues": 0,
+            "total_repos": 0,
+            "day_distribution": {str(i): 0 for i in range(7)},
+            "peak_day": 0,
+            "peak_day_contributions": 0,
+        }
+
+    if payload.get("errors"):
+        return {
+            "available": False,
+            "year": year,
+            "total_contributions": 0,
+            "total_commits": 0,
+            "total_prs": 0,
+            "total_reviews": 0,
+            "total_issues": 0,
+            "total_repos": 0,
+            "day_distribution": {str(i): 0 for i in range(7)},
+            "peak_day": 0,
+            "peak_day_contributions": 0,
+        }
+
+    contributions = (
+        payload.get("data", {})
+        .get("viewer", {})
+        .get("contributionsCollection", {})
+    )
+
+    calendar = contributions.get("contributionCalendar", {})
+    day_distribution = {str(i): 0 for i in range(7)}
+    for week in calendar.get("weeks", []):
+        for day in week.get("contributionDays", []):
+            date_str = day.get("date")
+            count = int(day.get("contributionCount", 0) or 0)
+            if not date_str:
+                continue
+            try:
+                dt = datetime.strptime(date_str, "%Y-%m-%d")
+            except ValueError:
+                continue
+            day_distribution[str(dt.weekday())] += count
+
+    if sum(day_distribution.values()) > 0:
+        peak_day, peak_day_contributions = max(
+            day_distribution.items(),
+            key=lambda x: x[1],
+        )
+        peak_day = int(peak_day)
+    else:
+        peak_day = 0
+        peak_day_contributions = 0
+
+    return {
+        "available": True,
+        "year": year,
+        "total_contributions": int(calendar.get("totalContributions", 0) or 0),
+        "total_commits": int(contributions.get("totalCommitContributions", 0) or 0),
+        "total_prs": int(contributions.get("totalPullRequestContributions", 0) or 0),
+        "total_reviews": int(contributions.get("totalPullRequestReviewContributions", 0) or 0),
+        "total_issues": int(contributions.get("totalIssueContributions", 0) or 0),
+        "total_repos": int(contributions.get("totalRepositoryContributions", 0) or 0),
+        "day_distribution": day_distribution,
+        "peak_day": peak_day,
+        "peak_day_contributions": peak_day_contributions,
+    }
 
 
 def find_git_repos(
@@ -703,6 +867,8 @@ def generate_wrapped_stats(
     redact_prefix_len: int = 3,
     estimate_tokens: bool = False,
     estimate_by_commits: bool = False,
+    include_github: bool = False,
+    github_year: Optional[int] = None,
 ) -> WrappedStats:
     """Generate all wrapped statistics from Claude Code data."""
     
@@ -712,6 +878,9 @@ def generate_wrapped_stats(
     if code_dir is None:
         default_code_dir = Path.home() / "Claude Code Projects"
         code_dir = default_code_dir if default_code_dir.exists() else None
+
+    if github_year is None:
+        github_year = datetime.now().year
 
     if max_stats:
         include_hidden = True
@@ -915,6 +1084,22 @@ def generate_wrapped_stats(
         if int(lines) > 0
     ]
 
+    github_stats = {
+        "available": False,
+        "year": github_year,
+        "total_contributions": 0,
+        "total_commits": 0,
+        "total_prs": 0,
+        "total_reviews": 0,
+        "total_issues": 0,
+        "total_repos": 0,
+        "day_distribution": {str(i): 0 for i in range(7)},
+        "peak_day": 0,
+        "peak_day_contributions": 0,
+    }
+    if include_github:
+        github_stats = fetch_github_stats(github_year)
+
     if redact_projects:
         projects = redact_project_list(projects_raw, redact_prefix_len)
         codebase_stats["projects"] = redact_project_list(
@@ -979,6 +1164,17 @@ def generate_wrapped_stats(
         git_peak_churn_hour_lines=git_stats["peak_churn_hour_lines"],
         git_repo_churn_recent=repo_churn_recent,
         language_mix=language_mix,
+        github_available=github_stats["available"],
+        github_year=github_stats["year"],
+        github_total_contributions=github_stats["total_contributions"],
+        github_total_commits=github_stats["total_commits"],
+        github_total_prs=github_stats["total_prs"],
+        github_total_reviews=github_stats["total_reviews"],
+        github_total_issues=github_stats["total_issues"],
+        github_total_repos=github_stats["total_repos"],
+        github_day_distribution=github_stats["day_distribution"],
+        github_peak_day=github_stats["peak_day"],
+        github_peak_day_contributions=github_stats["peak_day_contributions"],
         tokens_as_pages=int(output_tokens / 187),  # ~250 words/page, 0.75 tokens/word
         coding_personality=personality,
         streak_days=streak
@@ -1014,6 +1210,10 @@ def main():
                        help='Estimate total tokens across all projects')
     parser.add_argument('--estimate-by-commits', action='store_true',
                        help='Scale token estimate using git commit history')
+    parser.add_argument('--github-stats', action='store_true',
+                       help='Include GitHub contributions via gh CLI')
+    parser.add_argument('--github-year', type=int, default=None,
+                       help='Year to use for GitHub contributions')
     parser.add_argument('--output', type=Path, default=None,
                        help='Output JSON file path')
     parser.add_argument('--pretty', action='store_true',
@@ -1035,6 +1235,8 @@ def main():
             redact_prefix_len=args.redact_prefix_len,
             estimate_tokens=args.estimate_tokens,
             estimate_by_commits=args.estimate_by_commits,
+            include_github=args.github_stats,
+            github_year=args.github_year,
         )
         output = asdict(stats)
         

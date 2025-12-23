@@ -79,6 +79,17 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'git_peak_churn_hour_lines': stats.git_peak_churn_hour_lines,
         'git_repo_churn_recent': stats.git_repo_churn_recent,
         'language_mix': stats.language_mix,
+        'github_available': stats.github_available,
+        'github_year': stats.github_year,
+        'github_total_contributions': stats.github_total_contributions,
+        'github_total_commits': stats.github_total_commits,
+        'github_total_prs': stats.github_total_prs,
+        'github_total_reviews': stats.github_total_reviews,
+        'github_total_issues': stats.github_total_issues,
+        'github_total_repos': stats.github_total_repos,
+        'github_day_distribution': stats.github_day_distribution,
+        'github_peak_day': stats.github_peak_day,
+        'github_peak_day_contributions': stats.github_peak_day_contributions,
     }
     return json.dumps(data, indent=12)
 
@@ -228,6 +239,10 @@ Examples:
                        help='Estimate total tokens across all projects')
     parser.add_argument('--estimate-by-commits', action='store_true',
                        help='Scale token estimate using git commit history')
+    parser.add_argument('--github-stats', action='store_true',
+                       help='Include GitHub contributions via gh CLI')
+    parser.add_argument('--github-year', type=int, default=None,
+                       help='Year to use for GitHub contributions')
     parser.add_argument('--output', '-o', type=Path, default=None,
                        help='Output file path (default: output/wrapped.png)')
     parser.add_argument('--html-only', action='store_true',
@@ -259,6 +274,8 @@ Examples:
             redact_prefix_len=args.redact_prefix_len,
             estimate_tokens=args.estimate_tokens,
             estimate_by_commits=args.estimate_by_commits,
+            include_github=args.github_stats,
+            github_year=args.github_year,
         )
     except FileNotFoundError as e:
         print(f"\n❌ Error: {e}")
@@ -275,6 +292,8 @@ Examples:
     print(f"  • {stats.project_count} projects touched")
     print(f"  • Peak day: {stats.peak_day_date} ({stats.peak_day_messages:,} messages)")
     print(f"  • Your vibe: {stats.coding_personality}")
+    if stats.github_available:
+        print(f"  • GitHub {stats.github_year}: {stats.github_total_contributions:,} contributions")
     
     if args.stats_only:
         print("\n" + "=" * 40)

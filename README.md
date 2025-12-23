@@ -93,6 +93,9 @@ python generate.py --estimate-tokens
 
 # Scale token estimate using git history (lifetime-style)
 python generate.py --estimate-tokens --estimate-by-commits
+
+# Include GitHub contributions for a year (requires gh login)
+python generate.py --github-stats --github-year 2025
 ```
 
 ## Data Sources

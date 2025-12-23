@@ -607,6 +607,38 @@
                 </div>
             </div>
 
+            <div class="section" id="github-section">
+                <div class="section-title">GitHub <span id="github-year">2025</span></div>
+                <div class="codebase-stats">
+                    <div class="codebase-stat">
+                        <div class="codebase-stat-value" id="github-contribs">0</div>
+                        <div class="codebase-stat-label">Contribs</div>
+                    </div>
+                    <div class="codebase-stat">
+                        <div class="codebase-stat-value" id="github-commits">0</div>
+                        <div class="codebase-stat-label">Commits</div>
+                    </div>
+                    <div class="codebase-stat">
+                        <div class="codebase-stat-value" id="github-prs">0</div>
+                        <div class="codebase-stat-label">PRs</div>
+                    </div>
+                    <div class="codebase-stat">
+                        <div class="codebase-stat-value" id="github-reviews">0</div>
+                        <div class="codebase-stat-label">Reviews</div>
+                    </div>
+                    <div class="codebase-stat">
+                        <div class="codebase-stat-value" id="github-issues">0</div>
+                        <div class="codebase-stat-label">Issues</div>
+                    </div>
+                    <div class="codebase-stat">
+                        <div class="codebase-stat-value" id="github-repos">0</div>
+                        <div class="codebase-stat-label">Repos</div>
+                    </div>
+                </div>
+                <div class="day-heatmap" id="github-day-heatmap"></div>
+                <div class="hour-summary" id="github-day-summary"></div>
+            </div>
+
             <div class="two-col" id="insights-row">
                 <div class="section" style="margin-bottom: 0" id="churn-top-section">
                     <div class="section-title">Top Repos (Recent Churn)</div>
@@ -690,6 +722,17 @@
             git_peak_churn_hour_lines: 0,
             git_repo_churn_recent: [],
             language_mix: [],
+            github_available: false,
+            github_year: 2025,
+            github_total_contributions: 0,
+            github_total_commits: 0,
+            github_total_prs: 0,
+            github_total_reviews: 0,
+            github_total_issues: 0,
+            github_total_repos: 0,
+            github_day_distribution: {},
+            github_peak_day: 0,
+            github_peak_day_contributions: 0,
             tokens_as_pages: 6337
         };
 
@@ -872,6 +915,7 @@
 
             const codebaseSection = document.getElementById('codebase-section');
             const gitSection = document.getElementById('git-section');
+            const githubSection = document.getElementById('github-section');
             const churnHoursSection = document.getElementById('churn-hours-section');
             const churnTopSection = document.getElementById('churn-top-section');
             const langMixSection = document.getElementById('lang-mix-section');
@@ -906,6 +950,26 @@
                     renderHourChart(data.git_commit_churn_hour_distribution, 'churn-hour-chart', 'churn');
                 } else if (churnHoursSection) {
                     churnHoursSection.style.display = 'none';
+                }
+            }
+
+            if (!data.github_available) {
+                if (githubSection) githubSection.style.display = 'none';
+            } else {
+                document.getElementById('github-year').textContent = data.github_year;
+                document.getElementById('github-contribs').textContent = formatNumber(data.github_total_contributions);
+                document.getElementById('github-commits').textContent = formatNumber(data.github_total_commits);
+                document.getElementById('github-prs').textContent = formatNumber(data.github_total_prs);
+                document.getElementById('github-reviews').textContent = formatNumber(data.github_total_reviews);
+                document.getElementById('github-issues').textContent = formatNumber(data.github_total_issues);
+                document.getElementById('github-repos').textContent = formatNumber(data.github_total_repos);
+
+                renderDayHeatmap(data.github_day_distribution, 'github-day-heatmap', ' contribs', [16, 185, 129]);
+                const githubSummary = document.getElementById('github-day-summary');
+                if (githubSummary) {
+                    const peakDay = formatDayLabel(data.github_peak_day);
+                    const peakContribs = formatNumber(data.github_peak_day_contributions);
+                    githubSummary.textContent = `Peaks on ${peakDay} · ${peakContribs} contribs`;
                 }
             }
 
