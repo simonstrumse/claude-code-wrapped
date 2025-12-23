@@ -6,6 +6,8 @@ Parses ~/.claude/ data to generate wrapped statistics
 
 import json
 import os
+import re
+import hashlib
 import shutil
 import subprocess
 from pathlib import Path
@@ -103,6 +105,22 @@ def parse_history(claude_dir: Path) -> list[dict]:
             except json.JSONDecodeError:
                 continue
     return entries
+
+
+def redact_project_name(name: str, prefix_len: int) -> str:
+    """Redact a project name while keeping short, deterministic hints."""
+    cleaned = re.sub(r'[^A-Za-z0-9]', '', name or '')
+    if not cleaned:
+        cleaned = "proj"
+
+    prefix_len = max(1, prefix_len)
+    prefix = cleaned[:prefix_len].lower()
+    digest = hashlib.sha1(cleaned.encode('utf-8')).hexdigest()[:4]
+    return f"{prefix}...{digest}"
+
+
+def redact_project_list(projects: list[str], prefix_len: int) -> list[str]:
+    return [redact_project_name(name, prefix_len) for name in projects]
 
 
 def _infer_project_name_from_cwd(cwd: str) -> str:
@@ -558,6 +576,8 @@ def generate_wrapped_stats(
     relax_excludes: bool = False,
     include_git: bool = True,
     max_stats: bool = False,
+    redact_projects: bool = False,
+    redact_prefix_len: int = 3,
 ) -> WrappedStats:
     """Generate all wrapped statistics from Claude Code data."""
     
@@ -584,6 +604,8 @@ def generate_wrapped_stats(
     # Parse raw data
     stats = parse_stats_cache(claude_dir)
     projects = get_projects(claude_dir)
+    if redact_projects:
+        projects = redact_project_list(projects, redact_prefix_len)
     
     # Extract daily activity
     daily = stats.get('dailyActivity', [])
@@ -659,6 +681,11 @@ def generate_wrapped_stats(
         max_file_size_bytes,
         exclude_dirs,
     )
+    if redact_projects:
+        codebase_stats["projects"] = redact_project_list(
+            codebase_stats["projects"],
+            redact_prefix_len,
+        )
     git_stats = (
         generate_git_stats(repo_paths)
         if include_git
@@ -740,6 +767,10 @@ def main():
                        help='Skip git history stats')
     parser.add_argument('--max-stats', action='store_true',
                        help='Enable aggressive scanning for maximum stats')
+    parser.add_argument('--redact-projects', action='store_true',
+                       help='Redact project names in output')
+    parser.add_argument('--redact-prefix-len', type=int, default=3,
+                       help='Prefix length used for redacted project names')
     parser.add_argument('--output', type=Path, default=None,
                        help='Output JSON file path')
     parser.add_argument('--pretty', action='store_true',
@@ -757,6 +788,8 @@ def main():
             relax_excludes=args.relax_excludes,
             include_git=not args.skip_git,
             max_stats=args.max_stats,
+            redact_projects=args.redact_projects,
+            redact_prefix_len=args.redact_prefix_len,
         )
         output = asdict(stats)
         

@@ -82,6 +82,9 @@ python generate.py --include-hidden --include-nested-repos --max-file-size-mb 10
 
 # Skip git history aggregation (faster)
 python generate.py --skip-git
+
+# Redact project names (privacy-safe)
+python generate.py --redact-projects --redact-prefix-len 3
 ```
 
 ## Data Sources

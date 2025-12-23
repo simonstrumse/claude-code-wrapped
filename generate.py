@@ -205,6 +205,10 @@ Examples:
                        help='Skip git history stats')
     parser.add_argument('--max-stats', action='store_true',
                        help='Enable aggressive scanning for maximum stats')
+    parser.add_argument('--redact-projects', action='store_true',
+                       help='Redact project names in output')
+    parser.add_argument('--redact-prefix-len', type=int, default=3,
+                       help='Prefix length used for redacted project names')
     parser.add_argument('--output', '-o', type=Path, default=None,
                        help='Output file path (default: output/wrapped.png)')
     parser.add_argument('--html-only', action='store_true',
@@ -216,18 +220,6 @@ Examples:
     
     # Ensure output directory exists
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-    if args.code_dir is None and sys.stdin.isatty():
-        default_dir = Path.home() / 'Claude Code Projects'
-        default_hint = f" [default: {default_dir}]" if default_dir.exists() else ""
-        try:
-            response = input(f"Project folder for local codebase stats{default_hint}: ").strip()
-        except EOFError:
-            response = ""
-        if response:
-            args.code_dir = Path(response).expanduser()
-        elif default_dir.exists():
-            args.code_dir = default_dir
     
     print("🎁 Claude Code Wrapped Generator")
     print("=" * 40)
@@ -244,6 +236,8 @@ Examples:
             relax_excludes=args.relax_excludes,
             include_git=not args.skip_git,
             max_stats=args.max_stats,
+            redact_projects=args.redact_projects,
+            redact_prefix_len=args.redact_prefix_len,
         )
     except FileNotFoundError as e:
         print(f"\n❌ Error: {e}")
