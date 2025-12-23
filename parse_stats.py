@@ -32,8 +32,10 @@ class WrappedStats:
     cache_read_tokens: int
     cache_creation_tokens: int
     total_tokens: int
-    estimated_total_tokens: int
-    estimated_tokens_basis: str
+    estimated_total_tokens_conservative: int
+    estimated_total_tokens_aggressive: int
+    estimated_tokens_basis_conservative: str
+    estimated_tokens_basis_aggressive: str
     
     # Model usage
     primary_model: str
@@ -104,6 +106,9 @@ class WrappedStats:
     github_total_reviews: int
     github_total_issues: int
     github_total_repos: int
+    github_owned_repo_count: int
+    github_created_repo_count: int
+    github_created_repos: list
     github_day_distribution: dict
     github_peak_day: int
     github_peak_day_contributions: int
@@ -383,6 +388,84 @@ def resolve_exclude_dirs(relax_excludes: bool) -> set[str]:
     return set(RELAXED_EXCLUDED_DIRS if relax_excludes else DEFAULT_EXCLUDED_DIRS)
 
 
+def fetch_github_created_repos(year: int) -> tuple[int, list[str]]:
+    """Fetch repos created by the viewer during a given year."""
+    if shutil.which("gh") is None:
+        return 0, []
+
+    created_repos = []
+    total_owned = 0
+    after = None
+    stop_early = False
+
+    query = """
+    query($after: String) {
+      viewer {
+        repositories(first: 100, after: $after, ownerAffiliations: OWNER, isFork: false, orderBy: {field: CREATED_AT, direction: DESC}) {
+          totalCount
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          nodes {
+            name
+            createdAt
+          }
+        }
+      }
+    }
+    """
+
+    while True:
+        try:
+            cmd = ["gh", "api", "graphql", "-f", f"query={query}"]
+            if after:
+                cmd += ["-F", f"after={after}"]
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except (subprocess.CalledProcessError, OSError):
+            break
+
+        try:
+            payload = json.loads(proc.stdout)
+            repo_data = payload.get("data", {}).get("viewer", {}).get("repositories", {})
+        except (json.JSONDecodeError, AttributeError):
+            break
+
+        if not total_owned:
+            total_owned = int(repo_data.get("totalCount", 0) or 0)
+
+        nodes = repo_data.get("nodes", []) or []
+        for node in nodes:
+            created_at = node.get("createdAt", "")
+            if len(created_at) < 4:
+                continue
+            created_year = int(created_at[:4])
+            if created_year == year:
+                name = node.get("name")
+                if name:
+                    created_repos.append(name)
+            elif created_year < year:
+                stop_early = True
+                break
+
+        if stop_early:
+            break
+
+        page_info = repo_data.get("pageInfo", {}) or {}
+        if not page_info.get("hasNextPage"):
+            break
+        after = page_info.get("endCursor")
+        if not after:
+            break
+
+    return total_owned, created_repos
+
+
 def fetch_github_stats(year: int) -> dict:
     """Fetch GitHub contributions for a year using the gh CLI."""
     if shutil.which("gh") is None:
@@ -395,6 +478,9 @@ def fetch_github_stats(year: int) -> dict:
             "total_reviews": 0,
             "total_issues": 0,
             "total_repos": 0,
+            "owned_repo_count": 0,
+            "created_repo_count": 0,
+            "created_repos": [],
             "day_distribution": {str(i): 0 for i in range(7)},
             "peak_day": 0,
             "peak_day_contributions": 0,
@@ -452,6 +538,9 @@ def fetch_github_stats(year: int) -> dict:
             "total_reviews": 0,
             "total_issues": 0,
             "total_repos": 0,
+            "owned_repo_count": 0,
+            "created_repo_count": 0,
+            "created_repos": [],
             "day_distribution": {str(i): 0 for i in range(7)},
             "peak_day": 0,
             "peak_day_contributions": 0,
@@ -469,6 +558,9 @@ def fetch_github_stats(year: int) -> dict:
             "total_reviews": 0,
             "total_issues": 0,
             "total_repos": 0,
+            "owned_repo_count": 0,
+            "created_repo_count": 0,
+            "created_repos": [],
             "day_distribution": {str(i): 0 for i in range(7)},
             "peak_day": 0,
             "peak_day_contributions": 0,
@@ -484,6 +576,9 @@ def fetch_github_stats(year: int) -> dict:
             "total_reviews": 0,
             "total_issues": 0,
             "total_repos": 0,
+            "owned_repo_count": 0,
+            "created_repo_count": 0,
+            "created_repos": [],
             "day_distribution": {str(i): 0 for i in range(7)},
             "peak_day": 0,
             "peak_day_contributions": 0,
@@ -519,6 +614,7 @@ def fetch_github_stats(year: int) -> dict:
         peak_day = 0
         peak_day_contributions = 0
 
+    owned_repo_count, created_repos = fetch_github_created_repos(year)
     return {
         "available": True,
         "year": year,
@@ -528,6 +624,9 @@ def fetch_github_stats(year: int) -> dict:
         "total_reviews": int(contributions.get("totalPullRequestReviewContributions", 0) or 0),
         "total_issues": int(contributions.get("totalIssueContributions", 0) or 0),
         "total_repos": int(contributions.get("totalRepositoryContributions", 0) or 0),
+        "owned_repo_count": owned_repo_count,
+        "created_repo_count": len(created_repos),
+        "created_repos": created_repos,
         "day_distribution": day_distribution,
         "peak_day": peak_day,
         "peak_day_contributions": peak_day_contributions,
@@ -1103,8 +1202,10 @@ def generate_wrapped_stats(
         }
     )
 
-    estimated_total_tokens = 0
-    estimated_tokens_basis = ""
+    estimated_total_tokens_conservative = 0
+    estimated_total_tokens_aggressive = 0
+    estimated_tokens_basis_conservative = ""
+    estimated_tokens_basis_aggressive = ""
     if estimate_tokens and total_tokens > 0 and codebase_stats["line_count"] > 0:
         line_counts = codebase_stats.get("project_line_counts", {})
         size_ratio = 1.0
@@ -1131,17 +1232,15 @@ def generate_wrapped_stats(
             size_ratio = codebase_stats["repo_count"] / max(len(projects_raw), 1)
             size_basis = "project-count"
 
-        time_ratio = 1.0
-        time_basis = ""
+        estimated_total_tokens_conservative = int(total_tokens * size_ratio)
+        estimated_total_tokens_aggressive = estimated_total_tokens_conservative
+        estimated_tokens_basis_conservative = size_basis
+        estimated_tokens_basis_aggressive = size_basis
+
         if estimate_by_commits and git_stats.get("commit_count_range") and git_stats.get("commit_count"):
             time_ratio = git_stats["commit_count"] / max(git_stats["commit_count_range"], 1)
-            time_basis = "commit-weighted"
-
-        estimated_total_tokens = int(total_tokens * size_ratio * time_ratio)
-        basis_parts = [size_basis] if size_basis else []
-        if time_basis:
-            basis_parts.append(time_basis)
-        estimated_tokens_basis = " × ".join(basis_parts)
+            estimated_total_tokens_aggressive = int(estimated_total_tokens_conservative * time_ratio)
+            estimated_tokens_basis_aggressive = f"{size_basis} × commit-weighted"
 
     repo_churn_recent = [
         {"name": name, "lines": int(lines)}
@@ -1169,6 +1268,9 @@ def generate_wrapped_stats(
         "total_reviews": 0,
         "total_issues": 0,
         "total_repos": 0,
+        "owned_repo_count": 0,
+        "created_repo_count": 0,
+        "created_repos": [],
         "day_distribution": {str(i): 0 for i in range(7)},
         "peak_day": 0,
         "peak_day_contributions": 0,
@@ -1199,8 +1301,10 @@ def generate_wrapped_stats(
         cache_read_tokens=cache_read,
         cache_creation_tokens=cache_creation,
         total_tokens=total_tokens,
-        estimated_total_tokens=estimated_total_tokens,
-        estimated_tokens_basis=estimated_tokens_basis,
+        estimated_total_tokens_conservative=estimated_total_tokens_conservative,
+        estimated_total_tokens_aggressive=estimated_total_tokens_aggressive,
+        estimated_tokens_basis_conservative=estimated_tokens_basis_conservative,
+        estimated_tokens_basis_aggressive=estimated_tokens_basis_aggressive,
         primary_model=model_display,
         model_percentage=round(model_percentage, 1),
         peak_day_date=peak_day.get('date', 'N/A'),
@@ -1253,6 +1357,9 @@ def generate_wrapped_stats(
         github_total_reviews=github_stats["total_reviews"],
         github_total_issues=github_stats["total_issues"],
         github_total_repos=github_stats["total_repos"],
+        github_owned_repo_count=github_stats["owned_repo_count"],
+        github_created_repo_count=github_stats["created_repo_count"],
+        github_created_repos=github_stats["created_repos"],
         github_day_distribution=github_stats["day_distribution"],
         github_peak_day=github_stats["peak_day"],
         github_peak_day_contributions=github_stats["peak_day_contributions"],

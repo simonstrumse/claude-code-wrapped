@@ -11,6 +11,7 @@ from pathlib import Path
 from string import Template
 import argparse
 import shutil
+from typing import Optional
 
 from parse_stats import generate_wrapped_stats, WrappedStats
 
@@ -41,8 +42,10 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'cache_read_tokens': stats.cache_read_tokens,
         'cache_creation_tokens': stats.cache_creation_tokens,
         'total_tokens': stats.total_tokens,
-        'estimated_total_tokens': stats.estimated_total_tokens,
-        'estimated_tokens_basis': stats.estimated_tokens_basis,
+        'estimated_total_tokens_conservative': stats.estimated_total_tokens_conservative,
+        'estimated_total_tokens_aggressive': stats.estimated_total_tokens_aggressive,
+        'estimated_tokens_basis_conservative': stats.estimated_tokens_basis_conservative,
+        'estimated_tokens_basis_aggressive': stats.estimated_tokens_basis_aggressive,
         'primary_model': stats.primary_model,
         'peak_day_date': stats.peak_day_date,
         'peak_day_messages': stats.peak_day_messages,
@@ -94,11 +97,36 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'github_total_reviews': stats.github_total_reviews,
         'github_total_issues': stats.github_total_issues,
         'github_total_repos': stats.github_total_repos,
+        'github_owned_repo_count': stats.github_owned_repo_count,
+        'github_created_repo_count': stats.github_created_repo_count,
+        'github_created_repos': stats.github_created_repos,
         'github_day_distribution': stats.github_day_distribution,
         'github_peak_day': stats.github_peak_day,
         'github_peak_day_contributions': stats.github_peak_day_contributions,
     }
     return json.dumps(data, indent=12)
+
+
+def _prompt_path(prompt: str) -> Optional[Path]:
+    if not sys.stdin.isatty():
+        return None
+    try:
+        value = input(prompt).strip()
+    except EOFError:
+        return None
+    if not value:
+        return None
+    return Path(value).expanduser()
+
+
+def _gh_is_authenticated() -> bool:
+    if shutil.which("gh") is None:
+        return False
+    try:
+        subprocess.run(["gh", "auth", "status"], capture_output=True, check=True)
+    except subprocess.CalledProcessError:
+        return False
+    return True
 
 
 def generate_html(stats: WrappedStats, output_path: Path) -> Path:
@@ -143,7 +171,7 @@ def generate_html(stats: WrappedStats, output_path: Path) -> Path:
     return output_path
 
 
-def html_to_png(html_path: Path, png_path: Path, width: int = 520, height: int = 1200) -> Path:
+def html_to_png(html_path: Path, png_path: Path, width: int = 1600, height: int = 900) -> Path:
     """Convert HTML to PNG using available tools"""
     
     # Try playwright first (best quality)
@@ -258,6 +286,36 @@ Examples:
                        help='Only output stats as JSON, no image generation')
     
     args = parser.parse_args()
+
+    if args.code_dir is None:
+        prompt = "Project folder to scan for repos (leave blank to skip): "
+        selected = _prompt_path(prompt)
+        if selected:
+            args.code_dir = selected
+
+    if not args.github_stats and sys.stdin.isatty():
+        try:
+            include = input("Include GitHub stats via gh CLI? [y/N]: ").strip().lower()
+        except EOFError:
+            include = ""
+        if include in {"y", "yes"}:
+            args.github_stats = True
+
+    if args.github_stats:
+        if shutil.which("gh") is None:
+            print("⚠ gh CLI not found; skipping GitHub stats.")
+            args.github_stats = False
+        elif not _gh_is_authenticated():
+            if sys.stdin.isatty():
+                try:
+                    login = input("gh CLI not logged in. Run `gh auth login` now? [y/N]: ").strip().lower()
+                except EOFError:
+                    login = ""
+                if login in {"y", "yes"}:
+                    subprocess.run(["gh", "auth", "login"])
+            if not _gh_is_authenticated():
+                print("⚠ gh CLI not authenticated; skipping GitHub stats.")
+                args.github_stats = False
     
     # Ensure output directory exists
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -294,8 +352,10 @@ Examples:
     print(f"  • {stats.total_messages:,} messages exchanged")
     print(f"  • {stats.total_tokens:,} tokens processed (incl. cache)")
     print(f"  • {stats.output_tokens:,} output tokens")
-    if stats.estimated_total_tokens:
-        print(f"  • Estimated total tokens: {stats.estimated_total_tokens:,} ({stats.estimated_tokens_basis})")
+    if stats.estimated_total_tokens_conservative:
+        cons = stats.estimated_total_tokens_conservative
+        agg = stats.estimated_total_tokens_aggressive or cons
+        print(f"  • Estimated tokens: {cons:,}–{agg:,} (conservative/aggressive)")
     print(f"  • {stats.project_count} projects touched")
     print(f"  • Peak day: {stats.peak_day_date} ({stats.peak_day_messages:,} messages)")
     print(f"  • Your vibe: {stats.coding_personality}")
