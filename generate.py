@@ -39,6 +39,8 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'cache_read_tokens': stats.cache_read_tokens,
         'cache_creation_tokens': stats.cache_creation_tokens,
         'total_tokens': stats.total_tokens,
+        'estimated_total_tokens': stats.estimated_total_tokens,
+        'estimated_tokens_basis': stats.estimated_tokens_basis,
         'primary_model': stats.primary_model,
         'peak_day_date': stats.peak_day_date,
         'peak_day_messages': stats.peak_day_messages,
@@ -209,6 +211,10 @@ Examples:
                        help='Redact project names in output')
     parser.add_argument('--redact-prefix-len', type=int, default=3,
                        help='Prefix length used for redacted project names')
+    parser.add_argument('--estimate-tokens', action='store_true',
+                       help='Estimate total tokens across all projects')
+    parser.add_argument('--estimate-by-commits', action='store_true',
+                       help='Scale token estimate using git commit history')
     parser.add_argument('--output', '-o', type=Path, default=None,
                        help='Output file path (default: output/wrapped.png)')
     parser.add_argument('--html-only', action='store_true',
@@ -238,6 +244,8 @@ Examples:
             max_stats=args.max_stats,
             redact_projects=args.redact_projects,
             redact_prefix_len=args.redact_prefix_len,
+            estimate_tokens=args.estimate_tokens,
+            estimate_by_commits=args.estimate_by_commits,
         )
     except FileNotFoundError as e:
         print(f"\n❌ Error: {e}")
@@ -249,6 +257,8 @@ Examples:
     print(f"  • {stats.total_messages:,} messages exchanged")
     print(f"  • {stats.total_tokens:,} tokens processed (incl. cache)")
     print(f"  • {stats.output_tokens:,} output tokens")
+    if stats.estimated_total_tokens:
+        print(f"  • Estimated total tokens: {stats.estimated_total_tokens:,} ({stats.estimated_tokens_basis})")
     print(f"  • {stats.project_count} projects touched")
     print(f"  • Peak day: {stats.peak_day_date} ({stats.peak_day_messages:,} messages)")
     print(f"  • Your vibe: {stats.coding_personality}")

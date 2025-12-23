@@ -85,6 +85,12 @@ python generate.py --skip-git
 
 # Redact project names (privacy-safe)
 python generate.py --redact-projects --redact-prefix-len 3
+
+# Estimate tokens across all projects (size-weighted)
+python generate.py --estimate-tokens
+
+# Scale token estimate using git history (lifetime-style)
+python generate.py --estimate-tokens --estimate-by-commits
 ```
 
 ## Data Sources

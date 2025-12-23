@@ -32,6 +32,8 @@ class WrappedStats:
     cache_read_tokens: int
     cache_creation_tokens: int
     total_tokens: int
+    estimated_total_tokens: int
+    estimated_tokens_basis: str
     
     # Model usage
     primary_model: str
@@ -121,6 +123,10 @@ def redact_project_name(name: str, prefix_len: int) -> str:
 
 def redact_project_list(projects: list[str], prefix_len: int) -> list[str]:
     return [redact_project_name(name, prefix_len) for name in projects]
+
+
+def normalize_project_name(name: str) -> str:
+    return re.sub(r'[^a-z0-9]', '', (name or '').lower())
 
 
 def _infer_project_name_from_cwd(cwd: str) -> str:
@@ -336,11 +342,16 @@ def find_git_repos(
     return repo_paths
 
 
-def generate_git_stats(repo_paths: list[Path]) -> dict:
+def generate_git_stats(
+    repo_paths: list[Path],
+    range_start_ts: Optional[float] = None,
+    range_end_ts: Optional[float] = None,
+) -> dict:
     if not repo_paths or shutil.which("git") is None:
         return {
             "repo_count": len(repo_paths),
             "commit_count": 0,
+            "commit_count_range": 0,
             "lines_added": 0,
             "lines_deleted": 0,
             "commit_hour_distribution": {str(i): 0 for i in range(24)},
@@ -349,6 +360,7 @@ def generate_git_stats(repo_paths: list[Path]) -> dict:
         }
 
     commit_count = 0
+    commit_count_range = 0
     lines_added = 0
     lines_deleted = 0
     commit_hour_distribution = {str(i): 0 for i in range(24)}
@@ -383,8 +395,15 @@ def generate_git_stats(repo_paths: list[Path]) -> dict:
                 continue
             if "\t" not in line:
                 if line.isdigit():
+                    commit_ts = int(line)
                     commit_count += 1
-                    hour = datetime.fromtimestamp(int(line)).hour
+                    if (
+                        range_start_ts is not None
+                        and range_end_ts is not None
+                        and range_start_ts <= commit_ts <= range_end_ts
+                    ):
+                        commit_count_range += 1
+                    hour = datetime.fromtimestamp(commit_ts).hour
                     commit_hour_distribution[str(hour)] += 1
                 continue
 
@@ -406,6 +425,7 @@ def generate_git_stats(repo_paths: list[Path]) -> dict:
     return {
         "repo_count": len(repo_paths),
         "commit_count": commit_count,
+        "commit_count_range": commit_count_range,
         "lines_added": lines_added,
         "lines_deleted": lines_deleted,
         "commit_hour_distribution": commit_hour_distribution,
@@ -427,6 +447,8 @@ def generate_codebase_stats(
             "projects": [],
             "file_count": 0,
             "line_count": 0,
+            "project_line_counts": {},
+            "project_file_counts": {},
             "edit_hour_distribution": {str(i): 0 for i in range(24)},
             "peak_edit_hour": 0,
             "peak_edit_hour_files": 0,
@@ -440,6 +462,8 @@ def generate_codebase_stats(
     repo_count = len(project_dirs)
     file_count = 0
     line_count = 0
+    project_line_counts = defaultdict(int)
+    project_file_counts = defaultdict(int)
     edit_hour_distribution = {str(i): 0 for i in range(24)}
 
     for root, dirs, files in os.walk(code_dir):
@@ -468,7 +492,17 @@ def generate_codebase_stats(
                 continue
 
             file_count += 1
-            line_count += _count_lines(path)
+            file_lines = _count_lines(path)
+            line_count += file_lines
+
+            try:
+                rel_parts = path.relative_to(code_dir).parts
+                project_name = rel_parts[0] if rel_parts else code_dir.name
+            except ValueError:
+                project_name = code_dir.name
+
+            project_line_counts[project_name] += file_lines
+            project_file_counts[project_name] += 1
 
             hour = datetime.fromtimestamp(stat.st_mtime).hour
             edit_hour_distribution[str(hour)] += 1
@@ -485,6 +519,8 @@ def generate_codebase_stats(
         "projects": project_names,
         "file_count": file_count,
         "line_count": line_count,
+        "project_line_counts": dict(project_line_counts),
+        "project_file_counts": dict(project_file_counts),
         "edit_hour_distribution": edit_hour_distribution,
         "peak_edit_hour": peak_hour,
         "peak_edit_hour_files": peak_files,
@@ -578,6 +614,8 @@ def generate_wrapped_stats(
     max_stats: bool = False,
     redact_projects: bool = False,
     redact_prefix_len: int = 3,
+    estimate_tokens: bool = False,
+    estimate_by_commits: bool = False,
 ) -> WrappedStats:
     """Generate all wrapped statistics from Claude Code data."""
     
@@ -603,9 +641,8 @@ def generate_wrapped_stats(
     
     # Parse raw data
     stats = parse_stats_cache(claude_dir)
-    projects = get_projects(claude_dir)
-    if redact_projects:
-        projects = redact_project_list(projects, redact_prefix_len)
+    projects_raw = get_projects(claude_dir)
+    projects = projects_raw
     
     # Extract daily activity
     daily = stats.get('dailyActivity', [])
@@ -620,6 +657,16 @@ def generate_wrapped_stats(
     dates = [d['date'] for d in daily]
     date_range_start = min(dates) if dates else "N/A"
     date_range_end = max(dates) if dates else "N/A"
+
+    range_start_ts = None
+    range_end_ts = None
+    try:
+        range_start = datetime.strptime(date_range_start, '%Y-%m-%d')
+        range_end = datetime.strptime(date_range_end, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+        range_start_ts = range_start.timestamp()
+        range_end_ts = range_end.timestamp()
+    except ValueError:
+        pass
     
     # Model usage
     model_usage = stats.get('modelUsage', {})
@@ -681,17 +728,13 @@ def generate_wrapped_stats(
         max_file_size_bytes,
         exclude_dirs,
     )
-    if redact_projects:
-        codebase_stats["projects"] = redact_project_list(
-            codebase_stats["projects"],
-            redact_prefix_len,
-        )
     git_stats = (
-        generate_git_stats(repo_paths)
+        generate_git_stats(repo_paths, range_start_ts, range_end_ts)
         if include_git
         else {
             "repo_count": len(repo_paths),
             "commit_count": 0,
+            "commit_count_range": 0,
             "lines_added": 0,
             "lines_deleted": 0,
             "commit_hour_distribution": {str(i): 0 for i in range(24)},
@@ -699,6 +742,53 @@ def generate_wrapped_stats(
             "peak_commit_hour_commits": 0,
         }
     )
+
+    estimated_total_tokens = 0
+    estimated_tokens_basis = ""
+    if estimate_tokens and total_tokens > 0 and codebase_stats["line_count"] > 0:
+        line_counts = codebase_stats.get("project_line_counts", {})
+        size_ratio = 1.0
+        size_basis = "project-count"
+
+        if line_counts and projects_raw:
+            claude_norms = {normalize_project_name(name) for name in projects_raw}
+            codebase_norms = {
+                normalize_project_name(name): name
+                for name in codebase_stats["projects"]
+            }
+            known_lines = sum(
+                line_counts.get(codebase_norms[norm], 0)
+                for norm in codebase_norms
+                if norm in claude_norms
+            )
+            if known_lines > 0:
+                size_ratio = codebase_stats["line_count"] / known_lines
+                size_basis = "line-weighted"
+            elif projects_raw:
+                size_ratio = codebase_stats["repo_count"] / max(len(projects_raw), 1)
+                size_basis = "project-count"
+        elif projects_raw:
+            size_ratio = codebase_stats["repo_count"] / max(len(projects_raw), 1)
+            size_basis = "project-count"
+
+        time_ratio = 1.0
+        time_basis = ""
+        if estimate_by_commits and git_stats.get("commit_count_range") and git_stats.get("commit_count"):
+            time_ratio = git_stats["commit_count"] / max(git_stats["commit_count_range"], 1)
+            time_basis = "commit-weighted"
+
+        estimated_total_tokens = int(total_tokens * size_ratio * time_ratio)
+        basis_parts = [size_basis] if size_basis else []
+        if time_basis:
+            basis_parts.append(time_basis)
+        estimated_tokens_basis = " × ".join(basis_parts)
+
+    if redact_projects:
+        projects = redact_project_list(projects_raw, redact_prefix_len)
+        codebase_stats["projects"] = redact_project_list(
+            codebase_stats["projects"],
+            redact_prefix_len,
+        )
 
     return WrappedStats(
         total_sessions=stats.get('totalSessions', 0),
@@ -712,6 +802,8 @@ def generate_wrapped_stats(
         cache_read_tokens=cache_read,
         cache_creation_tokens=cache_creation,
         total_tokens=total_tokens,
+        estimated_total_tokens=estimated_total_tokens,
+        estimated_tokens_basis=estimated_tokens_basis,
         primary_model=model_display,
         model_percentage=round(model_percentage, 1),
         peak_day_date=peak_day.get('date', 'N/A'),
@@ -771,6 +863,10 @@ def main():
                        help='Redact project names in output')
     parser.add_argument('--redact-prefix-len', type=int, default=3,
                        help='Prefix length used for redacted project names')
+    parser.add_argument('--estimate-tokens', action='store_true',
+                       help='Estimate total tokens across all projects')
+    parser.add_argument('--estimate-by-commits', action='store_true',
+                       help='Scale token estimate using git commit history')
     parser.add_argument('--output', type=Path, default=None,
                        help='Output JSON file path')
     parser.add_argument('--pretty', action='store_true',
@@ -790,6 +886,8 @@ def main():
             max_stats=args.max_stats,
             redact_projects=args.redact_projects,
             redact_prefix_len=args.redact_prefix_len,
+            estimate_tokens=args.estimate_tokens,
+            estimate_by_commits=args.estimate_by_commits,
         )
         output = asdict(stats)
         
