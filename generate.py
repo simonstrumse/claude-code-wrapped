@@ -43,9 +43,7 @@ def stats_to_js_object(stats: WrappedStats) -> str:
         'cache_creation_tokens': stats.cache_creation_tokens,
         'total_tokens': stats.total_tokens,
         'estimated_total_tokens_conservative': stats.estimated_total_tokens_conservative,
-        'estimated_total_tokens_aggressive': stats.estimated_total_tokens_aggressive,
         'estimated_tokens_basis_conservative': stats.estimated_tokens_basis_conservative,
-        'estimated_tokens_basis_aggressive': stats.estimated_tokens_basis_aggressive,
         'primary_model': stats.primary_model,
         'peak_day_date': stats.peak_day_date,
         'peak_day_messages': stats.peak_day_messages,
@@ -354,8 +352,8 @@ Examples:
     print(f"  • {stats.output_tokens:,} output tokens")
     if stats.estimated_total_tokens_conservative:
         cons = stats.estimated_total_tokens_conservative
-        agg = stats.estimated_total_tokens_aggressive or cons
-        print(f"  • Estimated tokens: {cons:,}–{agg:,} (conservative/aggressive)")
+        basis = stats.estimated_tokens_basis_conservative or "estimate"
+        print(f"  • Estimated tokens (conservative): {cons:,} ({basis})")
     print(f"  • {stats.project_count} projects touched")
     print(f"  • Peak day: {stats.peak_day_date} ({stats.peak_day_messages:,} messages)")
     print(f"  • Your vibe: {stats.coding_personality}")

@@ -80,9 +80,8 @@ python generate.py --redact-projects
 
 ## Token Estimates
 
-When `--estimate-tokens` is enabled, the report shows a **range**:
+When `--estimate-tokens` is enabled, the report shows a **conservative** estimate:
 - **Conservative**: line-weighted scaling from known Claude projects to your full codebase
-- **Aggressive**: conservative × commit-weighted scaling (uses Git history volume)
 
 The report also shows the **coverage window** (the date range in `~/.claude/stats-cache.json`).
 

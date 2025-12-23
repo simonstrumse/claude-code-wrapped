@@ -110,7 +110,7 @@
         .hero-stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
+            gap: 0.75rem;
             column-span: all;
             margin-bottom: 1rem;
         }
@@ -124,7 +124,7 @@
         }
 
         .hero-stat-value {
-            font-size: 1.5rem;
+            font-size: 1.35rem;
             font-weight: 800;
             background: var(--gradient-main);
             -webkit-background-clip: text;
@@ -134,7 +134,7 @@
         }
 
         .hero-stat-label {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -153,11 +153,11 @@
         }
 
         .section-title {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -178,7 +178,7 @@
         }
 
         .peak-day-date {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 800;
         }
 
@@ -187,13 +187,13 @@
         }
 
         .peak-day-messages {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--accent-orange);
         }
 
         .peak-day-label {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: var(--text-muted);
         }
 
@@ -204,23 +204,23 @@
         }
 
         .personality-badge {
-            width: 48px;
-            height: 48px;
+            width: 42px;
+            height: 42px;
             border-radius: 12px;
             background: var(--gradient-main);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.35rem;
         }
 
         .personality-text h3 {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
         }
 
         .personality-text p {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
         }
 
@@ -228,8 +228,8 @@
             display: flex;
             align-items: flex-end;
             gap: 2px;
-            height: 40px;
-            margin-top: 0.75rem;
+            height: 32px;
+            margin-top: 0.5rem;
         }
 
         .hour-bar {
@@ -256,8 +256,8 @@
             display: flex;
             align-items: flex-end;
             gap: 4px;
-            height: 60px;
-            margin-top: 0.75rem;
+            height: 44px;
+            margin-top: 0.5rem;
         }
 
         .month-bar {
@@ -275,11 +275,11 @@
         .month-labels {
             display: flex;
             justify-content: space-between;
-            margin-top: 0.3rem;
+            margin-top: 0.2rem;
         }
 
         .month-label {
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             color: var(--text-muted);
             font-family: 'JetBrains Mono', monospace;
         }
@@ -287,35 +287,35 @@
         .hour-labels {
             display: flex;
             justify-content: space-between;
-            margin-top: 0.25rem;
+            margin-top: 0.2rem;
         }
 
         .hour-label {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             color: var(--text-muted);
             font-family: 'JetBrains Mono', monospace;
         }
 
         .hour-summary {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
-            margin-top: 0.4rem;
+            margin-top: 0.3rem;
         }
 
         .day-heatmap {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 6px;
-            margin-top: 0.5rem;
+            margin-top: 0.4rem;
         }
 
         .day-cell {
-            height: 34px;
+            height: 26px;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             font-family: 'JetBrains Mono', monospace;
             color: rgba(250, 250, 250, 0.9);
             border: 1px solid rgba(255,255,255,0.08);
@@ -328,9 +328,9 @@
             background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(59, 130, 246, 0.2));
             border: 1px solid rgba(168, 85, 247, 0.3);
             border-radius: 8px;
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 0.8rem;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 600;
         }
 
@@ -342,7 +342,7 @@
         .projects-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 0.35rem;
             margin-top: 0.5rem;
         }
 
@@ -355,8 +355,8 @@
         }
 
         .repo-list {
-            column-count: 4;
-            column-gap: 0.9rem;
+            column-count: 2;
+            column-gap: 0.6rem;
         }
 
         .repo-list-item {
@@ -367,11 +367,25 @@
             padding: 0.1rem 0;
         }
 
+        .repo-toggle {
+            margin-top: 0.4rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            color: var(--accent-blue);
+            font-size: 0.6rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
         .project-tag {
             background: rgba(255,255,255,0.05);
             border-radius: 6px;
-            padding: 0.35rem 0.65rem;
-            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.6rem;
             font-family: 'JetBrains Mono', monospace;
             color: var(--text-secondary);
             border: 1px solid rgba(255,255,255,0.05);
@@ -380,7 +394,7 @@
         .codebase-stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 0.75rem;
+            gap: 0.5rem;
             margin-top: 0.5rem;
         }
 
@@ -391,18 +405,18 @@
         .codebase-stat {
             background: rgba(255,255,255,0.03);
             border-radius: 12px;
-            padding: 0.75rem;
+            padding: 0.6rem;
             text-align: center;
             border: 1px solid rgba(255,255,255,0.05);
         }
 
         .codebase-stat-value {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
         }
 
         .codebase-stat-label {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.08em;
@@ -419,11 +433,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.35rem 0.5rem;
+            padding: 0.3rem 0.45rem;
             background: rgba(255,255,255,0.03);
             border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.05);
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             font-family: 'JetBrains Mono', monospace;
         }
 
@@ -444,7 +458,7 @@
         }
 
         .tokens-value {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: 800;
             background: var(--gradient-main);
             -webkit-background-clip: text;
@@ -453,26 +467,26 @@
         }
 
         .tokens-unit {
-            font-size: 1rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
         }
 
         .tokens-subtext {
-            font-size: 0.75rem;
+            font-size: 0.68rem;
             color: var(--text-muted);
-            margin-top: 0.25rem;
+            margin-top: 0.2rem;
         }
 
         .tokens-subtext-secondary {
-            font-size: 0.7rem;
+            font-size: 0.62rem;
             color: var(--text-muted);
-            margin-top: 0.15rem;
+            margin-top: 0.1rem;
         }
 
         .tokens-subtext-tertiary {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: var(--text-muted);
-            margin-top: 0.15rem;
+            margin-top: 0.1rem;
         }
 
         .footer {
@@ -497,18 +511,24 @@
             color: var(--accent-green);
             border-radius: 6px;
             padding: 0.35rem 0.65rem;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
-            margin-top: 0.5rem;
+            margin-top: 0.4rem;
         }
 
         .two-col {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            gap: 0.75rem;
             break-inside: avoid;
             margin-bottom: 1rem;
             width: 100%;
+        }
+
+        @media (min-width: 1700px) {
+            .repo-list {
+                column-count: 3;
+            }
         }
 
         @media (max-width: 1700px) {
@@ -521,16 +541,10 @@
             .content {
                 column-count: 3;
             }
-            .repo-list {
-                column-count: 3;
-            }
         }
 
         @media (max-width: 1100px) {
             .content {
-                column-count: 2;
-            }
-            .repo-list {
                 column-count: 2;
             }
         }
@@ -564,12 +578,12 @@
         }
 
         .mini-stat-value {
-            font-size: 1.25rem;
+            font-size: 1.05rem;
             font-weight: 700;
         }
 
         .mini-stat-label {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: var(--text-muted);
         }
     </style>
@@ -748,10 +762,11 @@
                 <div class="hour-summary" id="github-day-summary"></div>
             </div>
 
-            <div class="section section-full" id="github-created-section">
+            <div class="section" id="github-created-section">
                 <div class="section-title">Repos Created <span id="github-created-year">2025</span></div>
                 <div class="tokens-subtext" id="github-created-summary"></div>
                 <div class="repo-list" id="github-created-list"></div>
+                <button class="repo-toggle" id="github-created-toggle" type="button"></button>
             </div>
 
             <div class="two-col" id="insights-row">
@@ -802,9 +817,7 @@
             cache_creation_tokens: 0,
             total_tokens: 1185553,
             estimated_total_tokens_conservative: 0,
-            estimated_total_tokens_aggressive: 0,
             estimated_tokens_basis_conservative: "",
-            estimated_tokens_basis_aggressive: "",
             primary_model: "Opus 4.5",
             peak_day_date: "2025-12-17",
             peak_day_messages: 4472,
@@ -1026,6 +1039,43 @@
             });
         }
 
+        function renderCreatedRepos(items) {
+            const container = document.getElementById('github-created-list');
+            const toggle = document.getElementById('github-created-toggle');
+            if (!container) return;
+            const maxItems = 24;
+            let expanded = false;
+
+            const renderList = () => {
+                const list = expanded ? items : items.slice(0, maxItems);
+                container.innerHTML = '';
+                list.forEach(item => {
+                    const entry = document.createElement('div');
+                    entry.className = 'repo-list-item';
+                    entry.textContent = item;
+                    container.appendChild(entry);
+                });
+
+                if (toggle) {
+                    if (items.length > maxItems) {
+                        toggle.style.display = 'inline-flex';
+                        toggle.textContent = expanded ? 'Show less' : `Show all (${items.length})`;
+                    } else {
+                        toggle.style.display = 'none';
+                    }
+                }
+            };
+
+            renderList();
+
+            if (toggle) {
+                toggle.onclick = () => {
+                    expanded = !expanded;
+                    renderList();
+                };
+            }
+        }
+
         function render(data) {
             const codebaseProjects = Array.isArray(data.codebase_projects) ? data.codebase_projects : [];
             const displayProjects = codebaseProjects.length ? codebaseProjects : data.projects;
@@ -1043,16 +1093,13 @@
             
             const totalTokens = data.total_tokens || data.output_tokens || 0;
             const conservativeTokens = data.estimated_total_tokens_conservative || 0;
-            const aggressiveTokens = data.estimated_total_tokens_aggressive || 0;
-            const hasEstimate = conservativeTokens > 0 || aggressiveTokens > 0;
+            const hasEstimate = conservativeTokens > 0;
             const tokensTitle = document.getElementById('tokens-title');
             if (tokensTitle) {
-                tokensTitle.textContent = hasEstimate ? 'Tokens (Logged / Est. Range)' : 'Tokens Processed';
+                tokensTitle.textContent = hasEstimate ? 'Tokens (Logged / Est. Conservative)' : 'Tokens Processed';
             }
-            const displayedConservative = conservativeTokens || totalTokens;
-            const displayedAggressive = aggressiveTokens || displayedConservative;
             document.getElementById('tokens-value').textContent = hasEstimate
-                ? `${formatNumber(totalTokens)} / ${formatNumber(displayedConservative)} / ${formatNumber(displayedAggressive)}`
+                ? `${formatNumber(totalTokens)} / ${formatNumber(conservativeTokens)}`
                 : formatNumber(totalTokens);
             const outputTokens = formatNumber(data.output_tokens || 0);
             document.getElementById('tokens-subtext').textContent = `Output ${outputTokens} · ≈ ${data.tokens_as_pages.toLocaleString()} pages of code`;
@@ -1066,10 +1113,8 @@
             const tokensSubtextTertiary = document.getElementById('tokens-subtext-tertiary');
             if (tokensSubtextTertiary) {
                 if (hasEstimate) {
-                    const rangeText = `${formatNumber(displayedConservative)}–${formatNumber(displayedAggressive)}`;
                     const consBasis = data.estimated_tokens_basis_conservative || 'line-weighted';
-                    const aggBasis = data.estimated_tokens_basis_aggressive || consBasis;
-                    tokensSubtextTertiary.textContent = `Estimate range: ${rangeText} (${consBasis} / ${aggBasis})`;
+                    tokensSubtextTertiary.textContent = `Estimate basis: ${consBasis}`;
                 } else {
                     tokensSubtextTertiary.textContent = '';
                 }
@@ -1164,7 +1209,7 @@
                             ? `Created ${createdCount} repos · ${ownedCount} owned total`
                             : `Created ${createdCount} repos`;
                         document.getElementById('github-created-summary').textContent = summary;
-                        renderTagList(createdList, 'github-created-list', 'repo-list-item');
+                        renderCreatedRepos(createdList);
                     } else {
                         githubCreatedSection.style.display = 'none';
                     }
