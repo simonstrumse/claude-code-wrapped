@@ -171,7 +171,7 @@ def generate_html(stats: WrappedStats, output_path: Path) -> Path:
     return output_path
 
 
-def html_to_png(html_path: Path, png_path: Path, width: int = 1600, height: int = 900) -> Path:
+def html_to_png(html_path: Path, png_path: Path, width: int = 2000, height: int = 1200) -> Path:
     """Convert HTML to PNG using available tools"""
     
     # Try playwright first (best quality)
@@ -181,7 +181,7 @@ def html_to_png(html_path: Path, png_path: Path, width: int = 1600, height: int 
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page(viewport={'width': width, 'height': height})
-            page.goto(f'file://{html_path.absolute()}')
+            page.goto(f'file://{html_path.absolute()}', wait_until='domcontentloaded', timeout=60000)
             
             # Wait for fonts to load
             page.wait_for_timeout(1000)

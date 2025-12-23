@@ -36,11 +36,11 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 1.5rem;
+            padding: 1rem;
         }
 
         .wrapped-container {
-            width: min(1400px, 96vw);
+            width: min(2000px, 96vw);
             background: var(--bg-secondary);
             border-radius: 28px;
             overflow: hidden;
@@ -52,7 +52,7 @@
 
         .header {
             background: var(--gradient-main);
-            padding: 2rem;
+            padding: 1.5rem;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -86,14 +86,14 @@
         }
 
         .title {
-            font-size: 2rem;
+            font-size: 1.75rem;
             font-weight: 900;
             letter-spacing: -0.02em;
             text-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
 
         .year {
-            font-size: 3.5rem;
+            font-size: 3rem;
             font-weight: 900;
             letter-spacing: -0.03em;
             line-height: 1;
@@ -102,30 +102,29 @@
         }
 
         .content {
-            padding: 1.75rem 2rem 2rem;
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 1rem;
-            align-items: start;
+            padding: 1.25rem 1.5rem 1.5rem;
+            column-count: 5;
+            column-gap: 0.85rem;
         }
 
         .hero-stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
-            grid-column: 1 / -1;
+            column-span: all;
+            margin-bottom: 1rem;
         }
 
         .hero-stat {
             background: var(--bg-card);
             border-radius: 16px;
-            padding: 1rem;
+            padding: 0.85rem;
             text-align: center;
             border: 1px solid rgba(255,255,255,0.05);
         }
 
         .hero-stat-value {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 800;
             background: var(--gradient-main);
             -webkit-background-clip: text;
@@ -145,9 +144,12 @@
         .section {
             background: var(--bg-card);
             border-radius: 16px;
-            padding: 1.1rem 1.25rem;
-            margin-bottom: 0;
+            padding: 0.9rem 1.1rem;
+            margin-bottom: 0.75rem;
             border: 1px solid rgba(255,255,255,0.05);
+            break-inside: avoid;
+            display: inline-block;
+            width: 100%;
         }
 
         .section-title {
@@ -345,29 +347,24 @@
         }
 
         .section-wide {
-            grid-column: span 2;
+            column-span: all;
         }
 
         .section-full {
-            grid-column: 1 / -1;
+            column-span: all;
         }
 
-        .repo-tags {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 0.35rem;
+        .repo-list {
+            column-count: 4;
+            column-gap: 0.9rem;
         }
 
-        .repo-tag {
-            background: rgba(16, 185, 129, 0.12);
-            border: 1px solid rgba(16, 185, 129, 0.25);
-            color: var(--accent-green);
-            border-radius: 8px;
-            padding: 0.35rem 0.5rem;
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-align: center;
+        .repo-list-item {
+            break-inside: avoid;
+            font-size: 0.6rem;
+            color: var(--text-secondary);
             font-family: 'JetBrains Mono', monospace;
+            padding: 0.1rem 0;
         }
 
         .project-tag {
@@ -447,7 +444,7 @@
         }
 
         .tokens-value {
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             font-weight: 800;
             background: var(--gradient-main);
             -webkit-background-clip: text;
@@ -509,17 +506,32 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
-            grid-column: span 2;
+            break-inside: avoid;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
+        @media (max-width: 1700px) {
+            .content {
+                column-count: 4;
+            }
+        }
+
+        @media (max-width: 1300px) {
+            .content {
+                column-count: 3;
+            }
+            .repo-list {
+                column-count: 3;
+            }
         }
 
         @media (max-width: 1100px) {
             .content {
-                grid-template-columns: 1fr 1fr;
+                column-count: 2;
             }
-
-            .section-wide,
-            .two-col {
-                grid-column: span 2;
+            .repo-list {
+                column-count: 2;
             }
         }
 
@@ -534,17 +546,20 @@
             }
 
             .content {
-                grid-template-columns: 1fr;
+                column-count: 1;
                 padding: 1.5rem;
             }
 
             .hero-stats {
-                grid-column: 1 / -1;
+                column-span: all;
             }
 
-            .section-wide,
             .two-col {
-                grid-column: 1 / -1;
+                grid-template-columns: 1fr;
+            }
+
+            .repo-list {
+                column-count: 1;
             }
         }
 
@@ -653,7 +668,7 @@
                 <div class="tokens-subtext" style="margin-top: 0.5rem">100% — you don't compromise on intelligence</div>
             </div>
 
-            <div class="section section-full">
+            <div class="section">
                 <div class="section-title"><span id="project-count">14</span> Projects Touched</div>
                 <div class="projects-grid" id="projects-grid">
                     <!-- Generated by JS -->
@@ -701,7 +716,7 @@
                 </div>
             </div>
 
-            <div class="section section-wide" id="github-section">
+            <div class="section" id="github-section">
                 <div class="section-title">GitHub <span id="github-year">2025</span></div>
                 <div class="codebase-stats">
                     <div class="codebase-stat">
@@ -736,7 +751,7 @@
             <div class="section section-full" id="github-created-section">
                 <div class="section-title">Repos Created <span id="github-created-year">2025</span></div>
                 <div class="tokens-subtext" id="github-created-summary"></div>
-                <div class="repo-tags" id="github-created-list"></div>
+                <div class="repo-list" id="github-created-list"></div>
             </div>
 
             <div class="two-col" id="insights-row">
@@ -1004,10 +1019,10 @@
             if (!container) return;
             container.innerHTML = '';
             (items || []).forEach(item => {
-                const tag = document.createElement('span');
-                tag.className = tagClass || 'repo-tag';
-                tag.textContent = item;
-                container.appendChild(tag);
+                const entry = document.createElement('div');
+                entry.className = tagClass || 'repo-list-item';
+                entry.textContent = item;
+                container.appendChild(entry);
             });
         }
 
@@ -1149,7 +1164,7 @@
                             ? `Created ${createdCount} repos · ${ownedCount} owned total`
                             : `Created ${createdCount} repos`;
                         document.getElementById('github-created-summary').textContent = summary;
-                        renderTagList(createdList, 'github-created-list', 'repo-tag');
+                        renderTagList(createdList, 'github-created-list', 'repo-list-item');
                     } else {
                         githubCreatedSection.style.display = 'none';
                     }
