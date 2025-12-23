@@ -82,6 +82,11 @@ class WrappedStats:
     git_commit_day_distribution: dict
     git_peak_commit_day: int
     git_peak_commit_day_commits: int
+    git_commit_month_distribution: list
+    git_peak_commit_month_label: str
+    git_peak_commit_month_commits: int
+    git_longest_commit_streak_days: int
+    git_longest_commit_gap_days: int
     git_commit_churn_hour_distribution: dict
     git_peak_churn_hour: int
     git_peak_churn_hour_lines: int
@@ -159,6 +164,40 @@ def format_extension_label(ext: str) -> str:
     if not ext or ext == "noext":
         return "NOEXT"
     return ext.lstrip(".").upper()
+
+
+def shift_month(dt: datetime, delta_months: int) -> datetime:
+    """Shift datetime by a number of months, keeping day at 1."""
+    month_index = (dt.year * 12 + (dt.month - 1)) + delta_months
+    year = month_index // 12
+    month = month_index % 12 + 1
+    return dt.replace(year=year, month=month, day=1)
+
+
+def build_recent_month_keys(count: int = 12) -> list[tuple[str, str]]:
+    """Return list of (key, label) for recent months in chronological order."""
+    now = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    months = [shift_month(now, -i) for i in range(count - 1, -1, -1)]
+    return [(m.strftime("%Y-%m"), m.strftime("%b")) for m in months]
+
+
+def calculate_date_streaks(dates: list[datetime.date]) -> tuple[int, int]:
+    if not dates:
+        return 0, 0
+    dates_sorted = sorted(dates)
+    longest_streak = 1
+    current_streak = 1
+    longest_gap = 0
+    for i in range(1, len(dates_sorted)):
+        delta = (dates_sorted[i] - dates_sorted[i - 1]).days
+        if delta == 1:
+            current_streak += 1
+        else:
+            if delta > 1:
+                longest_gap = max(longest_gap, delta - 1)
+            current_streak = 1
+        longest_streak = max(longest_streak, current_streak)
+    return longest_streak, longest_gap
 
 
 def _infer_project_name_from_cwd(cwd: str) -> str:
@@ -543,6 +582,11 @@ def generate_git_stats(
             "commit_day_distribution": {str(i): 0 for i in range(7)},
             "peak_commit_day": 0,
             "peak_commit_day_commits": 0,
+            "commit_month_distribution": [],
+            "peak_commit_month_label": "",
+            "peak_commit_month_commits": 0,
+            "longest_commit_streak_days": 0,
+            "longest_commit_gap_days": 0,
             "commit_churn_hour_distribution": {str(i): 0 for i in range(24)},
             "peak_churn_hour": 0,
             "peak_churn_hour_lines": 0,
@@ -556,6 +600,10 @@ def generate_git_stats(
     commit_hour_distribution = {str(i): 0 for i in range(24)}
     commit_day_distribution = {str(i): 0 for i in range(7)}
     commit_churn_hour_distribution = {str(i): 0 for i in range(24)}
+    month_keys = build_recent_month_keys(12)
+    month_counts = {key: 0 for key, _ in month_keys}
+    month_label_map = {key: label for key, label in month_keys}
+    commit_dates = []
     repo_churn_recent = defaultdict(int)
 
     for repo in repo_paths:
@@ -619,6 +667,10 @@ def generate_git_stats(
                     commit_dt = datetime.fromtimestamp(commit_ts)
                     commit_hour_distribution[str(commit_dt.hour)] += 1
                     commit_day_distribution[str(commit_dt.weekday())] += 1
+                    month_key = commit_dt.strftime("%Y-%m")
+                    if month_key in month_counts:
+                        month_counts[month_key] += 1
+                        commit_dates.append(commit_dt.date())
                     current_ts = commit_ts
                 continue
 
@@ -647,6 +699,17 @@ def generate_git_stats(
         peak_day = 0
         peak_day_commits = 0
 
+    total_month_commits = sum(month_counts.values())
+    if total_month_commits > 0:
+        peak_month_key, peak_month_commits = max(month_counts.items(), key=lambda x: x[1])
+        peak_month_label = month_label_map.get(peak_month_key, peak_month_key)
+        peak_month_commits = int(peak_month_commits)
+    else:
+        peak_month_label = ""
+        peak_month_commits = 0
+
+    longest_streak_days, longest_gap_days = calculate_date_streaks(sorted(set(commit_dates)))
+
     churn_total = sum(commit_churn_hour_distribution.values())
     if churn_total > 0:
         peak_churn_hour, peak_churn_lines = max(commit_churn_hour_distribution.items(), key=lambda x: x[1])
@@ -673,6 +736,14 @@ def generate_git_stats(
         "commit_day_distribution": commit_day_distribution,
         "peak_commit_day": peak_day,
         "peak_commit_day_commits": peak_day_commits,
+        "commit_month_distribution": [
+            {"key": key, "label": month_label_map.get(key, key), "count": month_counts.get(key, 0)}
+            for key, _ in month_keys
+        ],
+        "peak_commit_month_label": peak_month_label,
+        "peak_commit_month_commits": peak_month_commits,
+        "longest_commit_streak_days": longest_streak_days,
+        "longest_commit_gap_days": longest_gap_days,
         "commit_churn_hour_distribution": commit_churn_hour_distribution,
         "peak_churn_hour": peak_churn_hour,
         "peak_churn_hour_lines": peak_churn_lines,
@@ -1020,6 +1091,11 @@ def generate_wrapped_stats(
             "commit_day_distribution": {str(i): 0 for i in range(7)},
             "peak_commit_day": 0,
             "peak_commit_day_commits": 0,
+            "commit_month_distribution": [],
+            "peak_commit_month_label": "",
+            "peak_commit_month_commits": 0,
+            "longest_commit_streak_days": 0,
+            "longest_commit_gap_days": 0,
             "commit_churn_hour_distribution": {str(i): 0 for i in range(24)},
             "peak_churn_hour": 0,
             "peak_churn_hour_lines": 0,
@@ -1159,6 +1235,11 @@ def generate_wrapped_stats(
         git_commit_day_distribution=git_stats["commit_day_distribution"],
         git_peak_commit_day=git_stats["peak_commit_day"],
         git_peak_commit_day_commits=git_stats["peak_commit_day_commits"],
+        git_commit_month_distribution=git_stats["commit_month_distribution"],
+        git_peak_commit_month_label=git_stats["peak_commit_month_label"],
+        git_peak_commit_month_commits=git_stats["peak_commit_month_commits"],
+        git_longest_commit_streak_days=git_stats["longest_commit_streak_days"],
+        git_longest_commit_gap_days=git_stats["longest_commit_gap_days"],
         git_commit_churn_hour_distribution=git_stats["commit_churn_hour_distribution"],
         git_peak_churn_hour=git_stats["peak_churn_hour"],
         git_peak_churn_hour_lines=git_stats["peak_churn_hour_lines"],
